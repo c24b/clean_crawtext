@@ -17,27 +17,16 @@ except:
 
 class Report():
 	def __init__(self, docopt_args):
-		
 		database_name = docopt_args['<project>']
+		self.fromEmail="constance@cortext.fr"
+		self.toEmails=re.split(",", docopt_args['--email'])
 		self.date = (datetime.now()).strftime("%d %m %Y %H:%M")
 		self.name = database_name
 		self.title = "[Crawtext] Projet %s" %(self.name)
 		d = Database(database_name)
 		self.report = d.report()
-
-		if docopt_args['--email']:
-			self.fromEmail="constance@cortext.fr"
-			self.toEmails=re.split(",", docopt_args['--email'])
-			self.username = docopt_args['<user>']
-			self.password = docopt_args['<passwd>']
-			self.generate()
-			self.send()
-
-		elif docopt_args['--o']:
-			self.reportfile = docopt_args['<outfile>']
-			self.export()
-		else:
-			print d.stats()
+		self.generate()
+		self.send()
 
 	def generate(self, attachment=None):
 		#Creating template
@@ -110,7 +99,7 @@ class Report():
 		for n in self.toEmails:
 			server = smtplib.SMTP('smtp.gmail.com:587')
 			server.starttls()
-			server.login(self.username,self.password)
+			server.login(username,password)
 			server.sendmail(self.fromEmail, n, self.msg)
 			server.quit()
 			print 'Msg Sent Sucessfully to %s. Check your mailbox!' %(n)
@@ -118,20 +107,17 @@ class Report():
 
 	def export(self):
 		#generate the dumps of Mongo DB
-		with open(self.reportfile, "wb") as fd:
-			fd.write(self.report)
-		return True
+		filename = "text.txt"
+		f = file(filename)
+		#Send it by mail
+		attachment = MIMEText(f.read())
+		attachment.add_header('Content-Disposition', 'attachment', filename=filename)           
+		self.msg.attach(attachment)
+		raise NotImplementedError
 
-	def send_report(self):
-		#inutile
-		self.generate()
-		self.send()
-		return True
-	
-	def show(self):
-		#inutile
-		print self.report
-		return True
+def send_report(docopt_args):
+	Report(docopt_args)
+	return	
 
 #if __name__ == '__main__':
 	#r = Report("test", fromEmail="constance@cortext.fr", toEmails=["4barbes@gmail.com", "constance@cortext.fr"])

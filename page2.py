@@ -1,5 +1,5 @@
 from datetime import datetime
-from filter import Filter
+#from filter import Filter
 
 import requests
 from random import choice
