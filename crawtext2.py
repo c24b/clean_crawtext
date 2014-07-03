@@ -8,11 +8,11 @@ A simple crawler in command line.
 Usage:
 	crawtext.py archive [ -f (default|wiki|forum) ] <url>
 	crawtext.py <name>
-	crawtext.py <email>
+	crawtext.py <user>
 	crawtext.py report <name>
 	crawtext.py export <name>
 	crawtext.py delete <name>
-	crawtext.py <name> -u <email>
+	crawtext.py <name> -u <user>
 	crawtext.py <name> -q <query>
 	crawtext.py <name> -s set <url>
 	crawtext.py <name> -s append <file>
@@ -52,7 +52,7 @@ __all__ = ['crawtext', 'manager','database', "scheduler", "dispatcher"]
 
 import __future__
 from docopt import docopt
-from scheduler2 import Scheduler
+from scheduler4 import Scheduler
 import sys
 
 
