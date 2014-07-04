@@ -101,6 +101,7 @@ class UpdateJob(Job):
 		
 class CrawlJob(Job):
 	def __init__(self, doc): 
+		print "Crawl"
 		self.date = datetime.now()
 		for k, v in doc.items():
 			setattr(self,k,v) 	
@@ -216,9 +217,9 @@ class ReportJob(Job):
 		self.db = Database(self.name)
 		
 	def run(self):
-		print "Report:"
-		filename = "Report_%s_%d" %(self.name, self.date)
-		with open( 'a') as f:
+		print "Report for %s" %self.name
+		filename = "Report_%s_%d-%d-%d-%d:%d.txt" %(self.name, self.date.year, self.date.month, self.date.day,self.date.hour, self.date.minute)
+		with open(filename, 'a') as f:
 			f.write((self.db.stats()).encode('utf-8'))
 		print "Successfully generated report for %s" %self.name 	
 		return self	

@@ -35,8 +35,8 @@ class Scheduler(object):
 					print "To register you as user %s:\n1/Create a new project:\n\tpython crawtext.py yournewproject\n2/Set Ownership to the project:\n\tpython crawtext.py yournewproject -u %s" %(j.user,j.user)
 					return False
 			elif j.name is not None:
-				if j.name in ["crawl", "delete", "archive", "report", "export"]:
-					print "**Project Name** can't be 'crawl', 'archive', 'report', 'export' or 'delete'"
+				if j.name in ["crawl", "delete", "archive", "report", "export", "extract"]:
+					print "**Project Name** can't be 'crawl', 'archive', 'report', 'extract','export' or 'delete'"
 					print "\t*To generate a report:\n\t\tcrawtext.py report pesticides"
 					print "\t*To create an export :\n\t\tcrawtext.py export pesticides"
 					print "\t*To delete a projet :\n\t\tcrawtext.py delete pesticides"
@@ -44,7 +44,6 @@ class Scheduler(object):
 					return False
 				elif self.get_one({"name":j.name}) is None:
 					print "No existing project found!"
-					
 					j.action ="create"
 					new_job = j.__dict__
 					new_job = Job(new_job)
@@ -52,6 +51,13 @@ class Scheduler(object):
 					new_job.run()
 					return True
 				else:
+					if self.get_one({"name":j.name, "action":"crawl"}) is None:
+						print "No crawl project found!"
+						j.action ="create"
+						new_job = j.__dict__
+						new_job = Job(new_job)
+						new_job = new_job.create_from_database()
+						new_job.run()
 					print "Jobs of the project %s"%j.name
 					self.show_by(j.__dict__, "name")
 					print "To activate crawl, you need to configure the 2 required options:\n\t- A query\n\t- A list of url to crawl OR a search API Key\n To see how to add parameters to the current job: crawtext.py --help" 
@@ -85,48 +91,21 @@ class Scheduler(object):
 					self.collection.update({"_id":n["_id"]}, {"$set":{"frequency":j.frequency}}, upsert=False)
 			else:
 				pass
-		# selecting user
-		'''
-		if j['user'] is not None and j['name'] is None:
-			#find user
-			#if user
-			if self.get_one({"user":j["user"]}) is not None:
-				#show every projects of the user
-				print "Project owned by %s"%j["user"] 
-				self.show_by(j,"user")
-				return True
-			
-		#selecting project
-		elif j["name"] is not None and j['update'] is False:
-				#verifying that name is correct
-				if j['name'] in ["crawl", "delete", "archive", "report", "export"]:
-					print "**Project Name** can't be 'crawl', 'archive', 'report', 'export' or 'delete'"
-					print "\t*To generate a report:\n\t\tcrawtext report pesticides"
-					print "\t*To create an export :\n\t\tcrawtext export pesticides"
-					print "\t*To delete a projet :\n\t\tcrawtext delete pesticides"
-					print "\t*To archive a website :\n\t\tcrawtext archive www.lemonde.fr"
-					return False
-				#project doesn't exist: create new one
-				elif self.get_one({"name":j['name']}) is None:							
-					print "No existing project found!"
-					j['action'] = "create"
-					j2 = Job.create_from_database(j)
-					j2.run()
-					return True
-				#project exist: show
-				else:
-					print "Jobs of the project %s"%j["name"] 
-					self.show_by(j, "name")
-					return True
-		
 		else:
-			if j["update"] is True:
-				print "Update existing project"
-				j2 = Job.create_from_database(j)
-				j2.run()
-			#j['action'] is not None:
-			#create job
-		'''	
+			crawl_job = self.collection.find_one({"name":j.name, "action":"crawl"})
+			if crawl_job is None:
+				print "No crawl job configure for this project. \n%s job on %s will currently produce no results.\n Create a defaut crawl job on project %s by typing crawtext.py %s" %(j.action.capitalize(), j.name, j.name, j.name)
+						
+			existing_job = self.collection.find_one({"name":j.name, "action":j.action})
+			if existing_job is not None:
+				#print existing_job
+				print "Job %s already exists on %s"%(j.action, j.name)
+				#self.collection.udpate({"id":existing_job["_id"]}, j.__dict__, False)
+				#print "Udpating %s job on %s"%(j.action, j.name)
+			else:
+				self.collection.insert(j.__dict__)
+				print "Job %s sucessfully scheduled on %s"%(j.action, j.name)
+			
 		
 	def delete(self, job_name):
 		'''Delete existing project'''
@@ -159,8 +138,7 @@ class Scheduler(object):
 		'''get all the current job'''		
 		
 		if project_name is None:
-			return False
-			#return [n["project"] for n in self.collection.distinct("name")]
+			return [n for n in self.collection.find()]
 		if type(project_name) == dict:
 			project_list = [n for n in self.collection.find(project_name)]
 			if len(project_list)> 0:
@@ -188,16 +166,8 @@ class Scheduler(object):
 		
 	def run_job(self, job_name=None):
 		'''Execute tasks from Job Database'''
-		if job_name is not None:
-			doc = self.get_one(job_name)		
-			j = Job.create_from_database(doc)
-			print "Running %s on %s" %(j.name, j.action)
-			return j.run()
-		else:
-			docs = self.get_list()
-			for doc in docs:
-				j = Job.create_from_database(doc)
-				print "Running %s on %s" %(j.name, j.action)
-				j.run()
-			return "All jobs done !"
-		
+		project_list = self.get_list()
+		for n in project_list:
+			j = Job(n)
+			j2 = j.create_from_database()
+			j2.run()
