@@ -9,7 +9,7 @@ from abc import ABCMeta, abstractmethod
 from validate_email import validate_email
 import docopt
 from utils import yes_no
-from job import Job
+from job import Job, CreateJob
 
 class Scheduler(object):
 	''' main access to Job Database'''
@@ -45,8 +45,7 @@ class Scheduler(object):
 				elif self.get_one({"name":j.name}) is None:
 					print "No existing project found!"
 					j.action ="create"
-					new_job = j.__dict__
-					new_job = Job(new_job)
+					new_job = Job(j.__dict__)
 					new_job = new_job.create_from_database()
 					new_job.run()
 					return True
@@ -69,6 +68,7 @@ class Scheduler(object):
 					print n["_id"]
 					self.collection.update({"_id":n["_id"]}, {"$set":{"user":j.user}}, upsert=False)
 				print "User %s will be the owner of the project %s" %(j.user, j.name)
+			
 			elif j.scope == "q":
 				print "Setting up query %s for the crawl project %s" %(j.query, j.name)
 				j._id = self.collection.find({"name":j.name, "action":"crawl"})[0]['_id']
@@ -76,6 +76,7 @@ class Scheduler(object):
 				
 			elif j.scope == "s":
 				print "Configuring sources"
+				#self.insert_url()
 				pass
 				#~ j._id = self.collection.find({"name":j.name, "action":"crawl"})[0]['_id']
 				#~ self.collection.update({"_id":j._id}, {"$set":{"sources":j.user}}, upsert=False)
@@ -91,11 +92,21 @@ class Scheduler(object):
 					self.collection.update({"_id":n["_id"]}, {"$set":{"frequency":j.frequency}}, upsert=False)
 			else:
 				pass
-		else:
-			crawl_job = self.collection.find_one({"name":j.name, "action":"crawl"})
-			if crawl_job is None:
-				print "No crawl job configure for this project. \n%s job on %s will currently produce no results.\n Create a defaut crawl job on project %s by typing crawtext.py %s" %(j.action.capitalize(), j.name, j.name, j.name)
-						
+		elif j.action == "archive":
+			print "Archiving?", j.url
+			j.name = j.url
+			j._id = self.collection.find_one({"name":j.name, "action":j.action})
+			if j._id is None:
+				self.collection.insert(j.__dict__)
+				print "Job %s sucessfully scheduled on %s"%(j.action, j.name)
+			else:
+				print "Website %s has been already archived" %j.name
+				self.collection.update({"_id": j._id}, {"$push":{"date": datetime.now()}})
+				print "Job %s sucessfully updated on %s"%(j.action, j.name)
+			#self.collection.update({"_id":j._id}, {"$set":{"user":j.user}}, upsert=False)
+		elif j.action == "delete":
+			self.delete(j.__dict__)
+		else:			
 			existing_job = self.collection.find_one({"name":j.name, "action":j.action})
 			if existing_job is not None:
 				#print existing_job
@@ -105,20 +116,31 @@ class Scheduler(object):
 			else:
 				self.collection.insert(j.__dict__)
 				print "Job %s sucessfully scheduled on %s"%(j.action, j.name)
-			
-		
-	def delete(self, job_name):
+				crawl_job = self.collection.find_one({"name":j.name, "action":"crawl"})
+				if crawl_job is None:
+					print "%s on an empty project will produce no results" %j.action
+					j = Job({"name":j.name})
+					j.create_from_ui()
+					print "Creating a defaut crawl project"
+					j2 =  CreateJob(j.__dict__)
+					j2.run()
+					#j2 = j.create_from_database()
+					#j2.run()
+					#new_job = CreateJob(Job(j.__dict__))
+					#new_job.run()
+					
+	def delete(self, job):
 		'''Delete existing project'''
-		job_list = self.get_list(job_name)
+		job_list = self.get_list({"name":job["name"]})
 		if job_list is not False:
 			for n in job_list:
 				self.collection.remove(n)
-				print "Sucessfully deleted task:", n['name']
 				
-			print "All the tasks of the project %s have been sucessfully deleted !"%job_name['name']
+				
+			print "All the tasks of the project '%s' have been sucessfully deleted !"%job['name']
 			return True
 		else:
-			print "No existing project %s with active tasks found" %job_name['name']
+			print "No existing project '%s' with active tasks found" %job['name']
 			return False
 			
 	def get_one(self, project_name):
@@ -163,11 +185,18 @@ class Scheduler(object):
 			return project_list
 		else:
 			return False
-		
+
 	def run_job(self, job_name=None):
 		'''Execute tasks from Job Database'''
-		project_list = self.get_list()
-		for n in project_list:
-			j = Job(n)
-			j2 = j.create_from_database()
-			j2.run()
+		if job_name is None:
+			project_list = self.get_list()
+			for n in project_list:
+				j = Job(n)
+				j2 = j.create_from_database()
+				j2.run()
+		else:
+			project_list = self.get_list({"name":job_name})
+			for n in project_list:
+				j = Job(n)
+				j2 = j.create_from_database()
+				j2.run()

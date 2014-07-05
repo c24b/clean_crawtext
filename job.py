@@ -95,7 +95,6 @@ class UpdateJob(Job):
 			setattr(self,k,v) 	
 	
 	def run(self):
-		print "updating"
 		print self.scope
 		pass	
 		
@@ -157,13 +156,17 @@ class CrawlJob(Job):
 		
 	def collect_sources(self):
 		''' Method to add new seed to sources and send them to queue if sourcing is deactivate'''
-		if self.file is not None:
-			self.get_local()
-		if self.query is not None and self.key is not None:
-			self.get_bing()
-		#~ if self.expand is True:
-			#~ self.expand()
-		return self
+		if self.query is not None:
+			if self.filename is not None:
+				print self.filename
+				self.get_local()
+			if self.key is not None:
+				print self.key
+				self.get_bing()
+			#~ if self.expand is True:
+				#~ self.expand()
+		else:
+			return False
 		
 	def send_seeds_to_queue(self):
 		#here we could filter out problematic urls
@@ -173,40 +176,42 @@ class CrawlJob(Job):
 		
 	def activate(self):
 		try:
-			#if self.sourcing is False:
 			self.collect_sources()
 		except AttributeError:
-			pass
+			print "not properly configured"
 		return self.send_seeds_to_queue()
 		
 	def run(self):
-		print "Running crawler..."
-		self.activate()
-		start = datetime.now()
-		while self.db.queue.count > 0:
-			for url in self.db.queue.distinct("url"):
-				page = Page(url)
-				if page.logs["status"] is False:
-					self.db.logs.insert(page.logs)
-				else:
-					page.extract("article")
-					print page.title 
-					
-				#~ print page.status
-					#print page.canonical_link
-				# else:
-				# 	self.db.logs.insert(article.bad_status())
-				self.db.queue.remove({"url": url})
-				if self.db.queue.count() == 0:
-					break
-			
-			if self.db.queue.count() == 0:		
-				break
-		
-		end = datetime.now()
-		elapsed = end - start
-		print "crawl finished in %s" %(elapsed)
-		print self.db.stats()
+		if self.f is True or self.q is True:
+			self.activate()
+		else:
+			print "Crawler has 2 required values: a Query and a sources collection (created by giving urls, or search API key"
+		#~ self.activate()
+		#~ start = datetime.now()
+		#~ while self.db.queue.count > 0:
+			#~ for url in self.db.queue.distinct("url"):
+				#~ page = Page(url)
+				#~ if page.logs["status"] is False:
+					#~ self.db.logs.insert(page.logs)
+				#~ else:
+					#~ page.extract("article")
+					#~ print page.title 
+					#~ 
+				#print page.status
+					#~ #print page.canonical_link
+				#~ # else:
+				#~ # 	self.db.logs.insert(article.bad_status())
+				#~ self.db.queue.remove({"url": url})
+				#~ if self.db.queue.count() == 0:
+					#~ break
+			#~ 
+			#~ if self.db.queue.count() == 0:		
+				#~ break
+		#~ 
+		#~ end = datetime.now()
+		#~ elapsed = end - start
+		#~ print "crawl finished in %s" %(elapsed)
+		#~ print self.db.stats()
 		return 
 	
 class ReportJob(Job):
@@ -224,12 +229,14 @@ class ReportJob(Job):
 		print "Successfully generated report for %s" %self.name 	
 		return self	
 		
-class ExtractJob(Job):
+class ArchiveJob(Job):
 	def __init__(self, doc):
 		self.date = datetime.now()
 		for k, v in doc.items():
 			setattr(self,k,v) 	
 		pass
+	def run(self):
+		print "Archiving %s" %self.url
 		
 class ExportJob(Job):
 	def __init__(self, doc):
