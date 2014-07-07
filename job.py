@@ -70,7 +70,7 @@ class Job(object):
 				
 class CreateJob(Job):
 	def __init__(self, doc): 
-		#self.date = datetime.now()
+		self.start_date = datetime.now()
 		
 		for k, v in doc.items():
 			if v is not None or False:
@@ -102,11 +102,27 @@ class CrawlJob(Job):
 	def __init__(self, doc): 
 		print "Crawl"
 		self.date = datetime.now()
+		#required properties
+		self.query = None
+		self.key = None
+		self.filename = None
 		for k, v in doc.items():
 			setattr(self,k,v) 	
 		self.db = Database(self.name)
 		self.db.create_colls()	
-	
+		
+		#properties
+		#pour définir les sources d'après un fichier :	crawtext pesticides -s set sources.txt	
+	# pour ajouter des sources d'après un fichier :	crawtext pesticides -s append sources.txt
+	# pour définir les sources d'après Bing :		crawtext pesticides -k set 12237675647
+	# pour ajouter des sources d'après Bing :		crawtext pesticides -k append 12237675647
+	# pour ajouter des sources automatiquement :	crawtext pesticides -s expand
+	# pour supprimer une source :					crawtext pesticides -s delete www.latribune.fr
+	#pour ajouter une nouvelle sources				crawtext pesticides -s add www.latribune.fr
+	# pour supprimer toutes les sources :			crawtext pesticides -s delete
+	#Récurrence
+	# pour définir la récurrence :                	crawtext pesticides -r monthly|weekly|daily
+		
 	def get_bing(self):
 		''' Method to extract results from BING API (Limited to 5000 req/month). ''' 
 		try:
@@ -175,12 +191,15 @@ class CrawlJob(Job):
 		return self
 		
 	def activate(self):
-		try:
-			self.collect_sources()
-		except AttributeError:
-			print "not properly configured"
-		return self.send_seeds_to_queue()
-		
+		if self.query is not None:
+			if self.filename is not None or self.key is not None:
+				self.collect_sources()
+				return self.send_seeds_to_queue()
+			else:
+				print "No sources have been configured for crawl project\n Please provide or a list of url using a file\nA\)To define sources to crawl using a file:\tcrawtext.py %s -s set your_sources_file.txt\nB\)To define sources to crawl using search option adding a Bing API key crawtext %s -k set your_api_key" %(self.name, self.name)
+		else:
+			print "No query search has been configured for crawl project\nPlease provide a query expression:\tcrawtext.py %s -q \"your_query_expression\""
+			
 	def run(self):
 		if self.f is True or self.q is True:
 			self.activate()
