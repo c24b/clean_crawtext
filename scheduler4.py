@@ -73,20 +73,31 @@ class Scheduler(object):
 				self.collection.update({"_id":j._id}, {"$set":{"query":j.query}}, upsert=False)
 				
 			elif j.scope == "s":
-				print "Configuring sources"
-				#self.insert_url()
 				if j.append is True:
 					print "adding sources file %s to crawl scope" %j.file
 					j._id = self.collection.find({"name":j.name, "action":"crawl"})[0]['_id']
 					self.collection.update({"_id":j._id}, {"$set":{"file":j.file}}, upsert=False)
 				elif j.set is True:
-					print "adding url %s to sources" %j.url
+					if j.url is not None:
+						project_db = Database(j.name)
+						sources = project_db.create_coll('sources')
+						sources.insert({"url": j.url, "mode":"manual"})
+						print "adding url %s to sources" %j.url
 				elif j.delete is True:
 					if j.url is not None:
-						print "deleting url %s from sources" %j.url
+						if sources.find_one({"url":j.url}) is not None:
+							sources.remove({"url": j.url})
+							queue.remove({"url":j["url"]})
+							print "deleting url %s from sources of the project %s" %(j.url, j.name)
+						else:
+							print "Url %s was not in sources" %j.url
 					else:
-						print "deleting all url"
-					
+						for n in sources.find():
+							if sources.find_one({"url":j.url}) is not None:
+								sources.remove({"url":n["url"]})
+								queue.remove({"url":n["url"]})
+				else:
+					pass	
 			elif j.scope == "k":
 				print "Configuring search API"
 				if j.set is True:
@@ -126,10 +137,22 @@ class Scheduler(object):
 				self.show_by(j.__dict__, "name")
 		elif j.action == "delete":
 			if j.s is True:
+				project_db = Database(j.name)
+				sources = project_db.create_coll('sources')
+				queue = project_db.create_coll('queue')
 				if j.url is not None:
-					print "deleting url %s from sources" %j.url
+					if sources.find_one({"url":j.url}) is not None:
+						sources.remove({"url": j.url})
+						queue.remove({"url":j["url"]})
+						print "deleting url %s from sources of the project %s" %(j.url, j.name)
+					else:
+						print "Url %s was not in sources" %j.url
 				else:
-					print "deleting every urls %s from sources. Cleaning up the crawl sources" %j.url
+					for n in sources.find():
+						if sources.find_one({"url":j.url}) is not None:
+							sources.remove({"url":n["url"]})
+							queue.remove({"url":n["url"]})
+					print "Cleaning up url sources for project %s" %(j.name)
 			else:	
 				self.delete(j.__dict__)
 		else:
@@ -232,7 +255,6 @@ class Scheduler(object):
 		else:
 			project_list = self.get_list({"name":job_name})
 			for n in project_list:
-				print n
 				j = Job(n)
 				j2 = j.create_from_database()
 				try:

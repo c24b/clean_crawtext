@@ -34,6 +34,7 @@ class Page():
 		self.src = ""
 		self.status_code = 0
 		
+		
 	def check(self):
 		'''Bool: check the format of the next url compared to curr url'''
 		if self.url is  None or len(self.url) <= 1 or self.url == "\n":
@@ -56,31 +57,34 @@ class Page():
 				self.req = requests.get((self.url), headers = headers,allow_redirects=True, proxies=None, timeout=5)
 				
 				try:
-					
 					self.src = self.req.text
+					self.status = True
 					return True
 				except Exception, e:
-					
 					self.error_type = "Request answer was not understood %s" %e
 					self.status_code = 400
+					self.status = False
 					return False
 				else:
 					self.error_type = "Not relevant"
 					self.status_code = 0
+					self.status = False
 					return False
 			except Exception, e:
 				#print "Error requesting the url", e
 				self.error_type = "Request answer was not understood %s" %e
 				self.status_code = 400
+				self.status = False
 				return False
 		except requests.exceptions.MissingSchema:
 			self.error_type = "Incorrect url - Missing sheme for : %s" %self.url
 			self.status_code = 406
-			
+			self.status = False
 			return False
 		except Exception as e:
-			self.error_type = "Another wired exception", e
+			self.error_type = "Another wired exception: %s %s" %(e, e.args)
 			self.status_code = 204
+			self.status = False
 			return False
 		
 	def control(self):
@@ -91,11 +95,13 @@ class Page():
 			if 'text/html' not in self.req.headers['content-type']:
 				self.error_type="Content type is not TEXT/HTML"
 				self.status_code = 404
+				self.status = False
 				return False
 			#Error on ressource or on server
 			elif self.req.status_code in range(400,520):
 				self.status_code = self.req.status_code
 				self.error_type="Connexion error"
+				self.status = False
 				return False
 			#Redirect
 			#~ elif len(self.req.history) > 0 | self.req.status_code in range(300,320): 
@@ -105,10 +111,12 @@ class Page():
 			else:
 				self.status_code = 200
 				self.error_type= "Ok"
+				self.status = True
 				return True	
 		except Exception:
 			self.error_type="Request headers are not found"
 			self.status_code = 403
+			self.status = False
 			return False		
 		
 	def extract(self):
@@ -117,10 +125,9 @@ class Page():
 		try:
 			#using Goose extractor
 			#print "extracting..."
-			g = Goose()
-			self.article = g.extract(raw_html=self.src)
+			self.article = bs(self.src).text
+			self.title = bs(self.src).title
 			#filtering relevant webpages
-			
 			if self.filter() is True:
 				self.outlinks = set([self.clean_url(url=e.attrs['href']) for e in bs(self.src).find_all('a', {'href': True})])
 				#print self.outlinks
@@ -130,9 +137,10 @@ class Page():
 								"domain": get_tld(self.url),
 								"outlinks": list(self.outlinks),
 								"backlinks":[n for n in self.outlinks if n == self.url],
-								"texte": self.article.cleaned_text,
-								"title": self.article.title,
-								"meta_description":bs(self.article.meta_description).text,
+								"texte": self.article,
+								"title": self.title,
+								"html": self.src,
+								#"meta_description":bs(self.article.meta_description).text,
 								"date": [self.crawl_date]
 								}
 				return self.info
@@ -144,6 +152,8 @@ class Page():
 			print e
 			self.error_type = str(e)
 			self.status_code = -1
+			self.status = False
+			return False
 					
 	def filter(self):
 		'''Bool Decide if page is relevant and match the correct query. Reformat the query properly: supports AND, OR and space'''
@@ -151,16 +161,17 @@ class Page():
 		if 'OR' in self.query:
 			for each in self.query.split('OR'):
 				query4re = each.lower().replace(' ', '.*')
-				if re.search(query4re, self.article.cleaned_text, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE):
+				if re.search(query4re, self.article, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE):
+					self.status = True
 					return True
 
 		elif 'AND' in self.query:
 			query4re = self.query.lower().replace(' AND ', '.*').replace(' ', '.*')
-			return bool(re.search(query4re, self.article.cleaned_text, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE))
+			return bool(re.search(query4re, self.article, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE))
 		#here add NOT operator
 		else:
 			query4re = self.query.lower().replace(' ', '.*')
-			return bool(re.search(query4re, self.article.cleaned_text, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE))
+			return bool(re.search(query4re, self.article, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE))
 			 	
 	def bad_status(self):
 		'''create a msg_log {"url":self.url, "error_code": self.req.status_code, "error_type": self.error_type, "status": False,"date": self.crawl_date}'''			
@@ -189,4 +200,13 @@ class Page():
 				clean_url = url
 			return clean_url
 		else:
-			return None			
+			return None
+			
+	def create(self):
+		print self.check() 
+		print self.request() 
+		print self.control()
+		print self.extract()
+		return self.info
+		
+		
