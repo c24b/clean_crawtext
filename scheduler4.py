@@ -6,10 +6,9 @@ import re
 from datetime import datetime
 from abc import ABCMeta, abstractmethod
 #from page2 import Page
-from validate_email import validate_email
 import docopt
-from utils import yes_no
-from job import Job, CreateJob
+from utils import *
+from job import Job
 
 class Scheduler(object):
 	''' main access to Job Database'''
@@ -35,6 +34,10 @@ class Scheduler(object):
 					print "To register you as user %s:\n1/Create a new project:\n\tpython crawtext.py yournewproject\n2/Set Ownership to the project:\n\tpython crawtext.py yournewproject -u %s" %(j.user,j.user)
 					return False
 			elif j.name is not None:
+				if validate_url(j.name) is True:
+					print "Archives of the website %s"%j.name
+					self.show_by(j.__dict__, "name")
+					return True	
 				if j.name in ["crawl", "delete", "archive", "report", "export", "extract"]:
 					print "**Project Name** can't be 'crawl', 'archive', 'report', 'extract','export' or 'delete'"
 					print "\t*To generate a report:\n\t\tcrawtext.py report pesticides"
@@ -45,11 +48,15 @@ class Scheduler(object):
 				elif self.get_one({"name":j.name}) is None:
 					print "No existing project found!"
 					j.action ="create"
-					new_job = Job(j.__dict__)
-					new_job = new_job.create_from_database()
-					new_job.run()
+					try:
+						new_job = Job(j.__dict__)
+						new_job = new_job.create_from_database()
+						new_job.run()
+					except KeyboardInterrupt:
+						sys.exit()
 					return True
 				else:
+					
 					if self.get_one({"name":j.name, "action":"crawl"}) is None:
 						print "No crawl project found!"
 						j.action ="create"
@@ -57,11 +64,19 @@ class Scheduler(object):
 						new_job = Job(new_job)
 						new_job = new_job.create_from_database()
 						new_job.run()
-					print "Jobs of the project %s"%j.name
-					self.show_by(j.__dict__, "name")
-					print "To activate crawl, you need to configure the 2 required options:\n\t- A query\n\t- A list of url to crawl OR a search API Key\n To see how to add parameters to the current job: crawtext.py --help" 
-					return True	
 					
+					
+					#self.get_one({"name":j.name, "action":"archive"}) is None:
+						#print "No archive project found!"
+						
+					else:
+						print "Jobs of the project %s"%j.name
+						self.show_by(j.__dict__, "name")
+						#print "To activate crawl, you need to configure the 2 required options:\n\t- A query\n\t- A list of url to crawl OR a search API Key\n To see how to add parameters to the current job: crawtext.py --help" 
+						return True	
+					
+					
+							
 		if j.action == "update":
 			if j.scope == "u":
 				for n in self.collection.find({"name":j.name}):
@@ -93,16 +108,18 @@ class Scheduler(object):
 			else:
 				pass
 		elif j.action == "archive":
-			print "Archiving?", j.url
+			
 			j.name = j.url
-			j._id = self.collection.find_one({"name":j.name, "action":j.action})
-			if j._id is None:
+			_id = self.collection.find_one({"name":j.name, "action":j.action})
+			
+			if _id is None:
 				self.collection.insert(j.__dict__)
 				print "Job %s sucessfully scheduled on %s"%(j.action, j.name)
 			else:
 				print "Website %s has been already archived" %j.name
-				self.collection.update({"_id": j._id}, {"$push":{"date": datetime.now()}})
-				print "Job %s sucessfully updated on %s"%(j.action, j.name)
+				self.show_by(j.__dict__, "name")
+				#self.collection.update({"_id": j._id}, {"$push":{"date": datetime.now()}})
+				#print "Job %s sucessfully updated on %s"%(j.action, j.name)
 			#self.collection.update({"_id":j._id}, {"$set":{"user":j.user}}, upsert=False)
 		elif j.action == "delete":
 			self.delete(j.__dict__)
