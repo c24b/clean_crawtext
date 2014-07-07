@@ -57,27 +57,27 @@ class Scheduler(object):
 					return True
 				else:
 					
-					if self.get_one({"name":j.name, "action":"crawl"}) is None:
-						print "No crawl project found!"
-						j.action ="create"
-						new_job = j.__dict__
-						new_job = Job(new_job)
-						new_job = new_job.create_from_database()
-						new_job.run()
-					
-					
-					#self.get_one({"name":j.name, "action":"archive"}) is None:
-						#print "No archive project found!"
-						
-					else:
-						print "Jobs of the project %s"%j.name
-						self.show_by(j.__dict__, "name")
-						#print "To activate crawl, you need to configure the 2 required options:\n\t- A query\n\t- A list of url to crawl OR a search API Key\n To see how to add parameters to the current job: crawtext.py --help" 
-						return True	
+					#~ if self.get_one({"name":j.name, "action":"crawl"}) is None:
+						#~ print "No crawl project found!"
+						#~ j.action ="create"
+						#~ new_job = j.__dict__
+						#~ new_job = Job(new_job)
+						#~ new_job = new_job.create_from_database()
+						#~ return new_job.run()
+					#~ 
+					#~ 
+					#~ #self.get_one({"name":j.name, "action":"archive"}) is None:
+						#~ #print "No archive project found!"
+						#~ 
+					#~ else:
+					print "Jobs of the project %s"%j.name
+					self.show_by(j.__dict__, "name")
+					#print "To activate crawl, you need to configure the 2 required options:\n\t- A query\n\t- A list of url to crawl OR a search API Key\n To see how to add parameters to the current job: crawtext.py --help" 
+					return True	
 					
 					
 							
-		if j.action == "update":
+		elif j.action == "update":
 			if j.scope == "u":
 				for n in self.collection.find({"name":j.name}):
 					print n["_id"]
@@ -123,28 +123,33 @@ class Scheduler(object):
 			#self.collection.update({"_id":j._id}, {"$set":{"user":j.user}}, upsert=False)
 		elif j.action == "delete":
 			self.delete(j.__dict__)
-		else:			
+		else:
+			existing_crawl_job = self.collection.find_one({"name":j.name, "action":"crawl"})
+			j.initial_action = j.action
+			if existing_crawl_job is None:
+				print "No existing crawl job has be previously scheduled: %s on %s will produce now results as long as you have no crawl project properly configured"%(j.action, j.name)
+				j.action ="create"
+				try:
+					new_job = Job(j.__dict__)
+					new_job = new_job.create_from_database()
+					new_job.run()
+				except KeyboardInterrupt:
+					sys.exit()
+									
 			existing_job = self.collection.find_one({"name":j.name, "action":j.action})
+			j.action = j.initial_action
 			if existing_job is not None:
 				#print existing_job
 				print "Job %s already exists on %s"%(j.action, j.name)
 				#self.collection.udpate({"id":existing_job["_id"]}, j.__dict__, False)
 				#print "Udpating %s job on %s"%(j.action, j.name)
+				return False
 			else:
+				j.action
 				self.collection.insert(j.__dict__)
 				print "Job %s sucessfully scheduled on %s"%(j.action, j.name)
-				crawl_job = self.collection.find_one({"name":j.name, "action":"crawl"})
-				if crawl_job is None:
-					print "%s on an empty project will produce no results" %j.action
-					j = Job({"name":j.name})
-					j.create_from_ui()
-					print "Creating a defaut crawl project"
-					j2 =  CreateJob(j.__dict__)
-					j2.run()
-					#j2 = j.create_from_database()
-					#j2.run()
-					#new_job = CreateJob(Job(j.__dict__))
-					#new_job.run()
+				return True
+					
 					
 	def delete(self, job):
 		'''Delete existing project'''
@@ -193,10 +198,11 @@ class Scheduler(object):
 		if project_list is not False:
 			print "******\tProject %s: %s    ******" %(str(by), str(doc[by]))
 			for job in project_list:
+				print job["action"]
 				for k, v in job.items():
 					if v is False or v is None:
 						continue
-					if k not in ['_id', by, '_key']:
+					if k not in ['_id', by, '_key', "initial_action"]:
 						print "*\t-", k,'\t', v
 			print "*******************************************"
 			return project_list
