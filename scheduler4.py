@@ -177,7 +177,6 @@ class Scheduler(object):
 				#print "Udpating %s job on %s"%(j.action, j.name)
 				return False
 			else:
-				j.action
 				self.collection.insert(j.__dict__)
 				print "Job %s sucessfully scheduled on %s"%(j.action, j.name)
 				return True

@@ -6,6 +6,7 @@ from datetime import datetime
 from utils import yes_no
 from database import *
 import requests
+from page import Page
 
 class Job(object):
 	#__metaclass__ = ABCMeta
@@ -123,8 +124,8 @@ class CrawlJob(Job):
 				self.insert_url(e["Url"],origin="bing")
 			return True
 		except Exception as e:
-			print e
-			self.status_code = -1
+			print "Bing exception", e
+			self.status_code = -2
 			self.error_type = "Error fetching results from BING API.\nError is : (%s).\n>>>>Check your credentials: number of calls may not exceed 5000req/month" %e.args
 			return False
 
@@ -136,10 +137,11 @@ class CrawlJob(Job):
 				self.insert_url(url, origin=self.file)
 			return True
 		except Exception:
-			self.status_code = -1
+			self.status_code = -2
 			self.error_type = "Error fetching results from file: %s.\nFile doesn't not exists or has a wrong name.\nPlease set up a correct filename:\n\t crawtext.py %s -s append your_sources_file.txt" %(self.filename, self.name)
-			print self.error_type
+			self.status = False
 			return False
+	
 	def expand(self):
 		'''Expand sources url adding results urls collected from previous crawl'''
 		for url in self.db.results.distinct("url"):
@@ -149,17 +151,28 @@ class CrawlJob(Job):
 				
 	def insert_url(self, url, origin="default"):
 		if url not in self.db.sources.find({"url": url}):
-			self.db.sources.insert({"url":url, "origin":"bing","date":[datetime.today()]}, upsert=False)
+			self.db.sources.insert({"url":url, "origin":"bing","date":[datetime.today()]}, upsert=True)
 		else:
-			self.db.sources.update({"url":url,"$push": {"date":datetime.today()}}, upsert=True)
+			self.db.sources.update({"url":url,"origin":origin, "$push": {"date":datetime.today()}}, upsert=False)
 		return self.db.sources.find_one({"url": url})
-		
+	
+	def delete_url(self, url, origin="default"):
+		if url not in self.db.sources.find({"url": url}):
+				print "url %s was not in sources. Check url format" %url
+		else:
+			self.db.sources.remove({"url":url})
+		return
+			
 	def collect_sources(self):
 		''' Method to add new seed to sources and send them to queue if sourcing is deactivate'''
 		try:
-			self.get_local()
-			self.get_bing()
-			return True
+			if self.file is not None:
+				print "Getting local urls"
+				self.get_local()
+			if self.key is not None:
+				print "Searching on Bing"
+				self.get_bing()
+			return self
 			
 		except Exception as e:
 			print ">>>> collecting source error:", e
@@ -174,28 +187,33 @@ class CrawlJob(Job):
 	def activate(self):
 		if self.query is None:
 			print "No query search has been configured for crawl project\nPlease provide a query expression:\tcrawtext.py %s -q \"your_query_expression\""	
-		else:	
-			if self.file is None or self.key is None:
-				print "No sources have been configured for crawl project\n Please provide or a list of url using a file\nA\)To define sources to crawl using a file:\tcrawtext.py %s -s set your_sources_file.txt\nB\)To define sources to crawl using search option adding a Bing API key crawtext %s -k set your_api_key" %(self.name, self.name)
-				return False
-			else:	
-				self.collect_sources()
-				self.send_seeds_to_queue()
-				return True
+			return False
+		else:
+			if len(self.db.sources.distinct("url")) <= 0:
+				if self.file is None and self.key is None:
+					print "No sources have been configured for crawl project\n Please provide or a list of url using a file\nA\)To define sources to crawl using a file:\tcrawtext.py %s -s set your_sources_file.txt\nB\)To define sources to crawl using search option adding a Bing API key crawtext %s -k set your_api_key" %(self.name, self.name)
+					return False	
+				else:
+					self.collect_sources()
+			self.send_seeds_to_queue()
+			return True
 	
 			
 	def run(self):
 		if self.activate():
 			start = datetime.now()
-			print self.db.queue.count()
-			print self.db.sources.count()
-		else:
-			pass
-		#~ if self.f is True or self.q is True:
-			#~ self.activate()
-		#~ else:
-			#~ print "Crawler has 2 required values: a Query and a sources collection (created by giving urls, or search API key"
-		#~ self.activate()
+			while self.db.queue.count > 0:
+				for url in self.db.queue.distinct("url"):
+					page = Page(url, self.query)
+					print page.status
+					self.db.queue.remove({"url": url})
+					if self.db.queue.count() == 0:
+						break
+			
+				if self.db.queue.count() == 0:		
+					break
+		
+		
 		#~ start = datetime.now()
 		#~ while self.db.queue.count > 0:
 			#~ for url in self.db.queue.distinct("url"):
@@ -221,7 +239,7 @@ class CrawlJob(Job):
 		#~ elapsed = end - start
 		#~ print "crawl finished in %s" %(elapsed)
 		#~ print self.db.stats()
-		return 
+		return self
 	
 class ReportJob(Job):
 	def __init__(self, doc):
