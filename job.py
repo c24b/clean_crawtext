@@ -12,8 +12,6 @@ import sys
 class Job(object):
 	#__metaclass__ = ABCMeta
 	def __init__(self, user_input):
-		#initializing job
-		self.user = None
 		#normalizing between DB and docopt
 		for k,v in user_input.items():
 			k = re.sub("<|>|-|--", "", k)
@@ -25,20 +23,20 @@ class Job(object):
 			if validate_email(self.name) is True:
 				self.user = self.name
 				self.name = None
-			
-			
-	
+
 	def create_from_ui(self):
 		'''defaut values from user input'''
-		for k, v in self.__dict__.items():		
+		self.update = None
+		self.action = None
+		for k, v in self.__dict__.items():
 			if k in ["report", "extract", "export", "archive"]:
 				self.action = k
 				self.start_date = datetime.today()
-				return self
-			elif k in ["u"] and v is True:
+				
+			elif k == "u" and self.__dict__['user'] is not None:
 				#option for the all bunch of project
 				self.update = "all"
-				return self
+				
 			elif k in ["q", "s", "k"] and v is True:
 				#option for the defaut crawl project
 				#print "adding parameter '%s' for crawl project '%s'"%(k, self.name)
@@ -46,11 +44,10 @@ class Job(object):
 			elif k in ["monthly", "weekly", "daily"]:
 				self.freq = k
 				self.update = "all"
-				return self
+				
 			else:			
-				self.update = None
-				self.action = None
-				return self
+				continue
+		return self
 		
 		
 			

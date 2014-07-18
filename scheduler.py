@@ -30,9 +30,7 @@ class Scheduler(object):
 		elif j.delete is True:
 			return self.delete(j.name)	
 		elif j.update is not None:
-			print "Updating"
 			if j.update == "all":
-				print "All"
 				job_list = [n for n in self.collection.find({"name":j.name})]
 				if len(job_list) == 0:
 					return self.create(j.__dict__)
@@ -43,7 +41,6 @@ class Scheduler(object):
 					return sys.exit()
 					
 				elif j.freq is not None:
-					print j.freq
 					for n in self.collection.find({"name":j.name}):
 						self.collection.update({"_id":n["_id"]}, {"$set":{"frequency":j.freq}}, upsert=False)
 					print "Every task of project %s will be run on a %s basis"%(j.name, j.freq)
@@ -81,7 +78,18 @@ class Scheduler(object):
 		 project_dict["start_date"] = datetime.now()
 		 self.collection.insert(project_dict)
 		 return "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(project_dict['name'],project_dict['name'])			
-		 
+	def update(self, job):
+		if job['q']:
+			self.collection.update({"_id":project_dict["_id"]}, {"$set":{"query":job["query"]}}, upsert=False)
+			print "Setting up query '%s' for the crawl project %s" %(j.query, j.name)
+			return sys.exit()
+		else:
+			crawl_job = crawl_job.get_from_database()
+			crawl_job = Job(scheduled_job)
+			#access to crawl job database
+			#crawl_job = crawl_job.get_from_database()
+				# if j.scope == "s":
+				# 	print new_job.sources.count()		
 	def delete(self, project_name):
 		'''Delete existing project'''
 		job_list = self.get_list(project_name)
