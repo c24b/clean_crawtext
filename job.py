@@ -13,14 +13,12 @@ class Job(object):
 	#__metaclass__ = ABCMeta
 	def __init__(self, user_input):
 		#initializing job
-		self.action = None
 		self.user = None
 		#normalizing between DB and docopt
-		for k,v in user_input.items():	
-			if v is not False:
-				k = re.sub("<|>|-|--", "", k)
-				if k not in ["task_db", "coll", "job", "collection"]:
-					setattr(self,k,v)
+		for k,v in user_input.items():
+			k = re.sub("<|>|-|--", "", k)
+			if k not in ["task_db", "coll", "job", "collection"]:
+				setattr(self,k,v)
 			
 		#configuring job	
 		if self.name is not None and self.user is None:
@@ -32,29 +30,29 @@ class Job(object):
 	
 	def create_from_ui(self):
 		'''defaut values from user input'''
-		for k, v in self.__dict__.items():
-			if v is True or v is not None or v != "":
-				if k in ["report", "extract", "export", "archive"]:
-					self.action = k
-					self.start_date = datetime.today()
-					self.update = False			
-				
-				elif k in ["u", "r"]:
-					#option for the all bunch of project
-					if v is True:						
-						self.show = False
-						self.update = "all"
-					
-				elif k in ["q", "s", "k"]:
-					#option for the defaut crawl project
-					#print "adding parameter '%s' for crawl project '%s'"%(k, self.name)
-					if v is True:
-						self.update = "crawl"
-						self.action = "crawl"
-						self.show = False
-				else:
-					continue
-			return sys.exit()
+		for k, v in self.__dict__.items():		
+			if k in ["report", "extract", "export", "archive"]:
+				self.action = k
+				self.start_date = datetime.today()
+				return self
+			elif k in ["u"] and v is True:
+				#option for the all bunch of project
+				self.update = "all"
+				return self
+			elif k in ["q", "s", "k"] and v is True:
+				#option for the defaut crawl project
+				#print "adding parameter '%s' for crawl project '%s'"%(k, self.name)
+				self.update = "crawl"
+			elif k in ["monthly", "weekly", "daily"]:
+				self.freq = k
+				self.update = "all"
+				return self
+			else:			
+				self.update = None
+				self.action = None
+				return self
+		
+		
 			
 		
 
@@ -66,37 +64,10 @@ class Job(object):
 			print self.action, "has not been implemented Yet"			
 			raise NotImplementedError
 
-
-	def __repr__(self):
-		'''print Job properties'''
-		return self.__dict__	
-			    
-		
 	def run(self):
-		print "running Job..."
+		#self.action = "crawl"
 		pass
 				
-class CreateJob(Job):
-	def __init__(self, doc): 
-		self.start_date = datetime.now()
-		
-		for k, v in doc.items():
-			if v is not None or False:
-				setattr(self,k,v)
-		self.action = "crawl"
-		self.status = "inactive"
-		self.active = False
-		self.frequency = "monthly"
-
-	def run(self):
-		new = yes_no("Do you want to create a new CRAWL project?")
-		if new == 1:		
-			task_db = Database(TASK_MANAGER_NAME)
-			coll = task_db.create_coll(TASK_COLL)
-			coll.insert(self.__dict__)
-			print "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(self.name,self.name)
-			return self
-			
 
 class CrawlJob(Job):
 	def __init__(self, doc): 
