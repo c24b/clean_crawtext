@@ -9,11 +9,8 @@ import requests
 from page import Page
 
 class Job(object):
-	#__metaclass__ = ABCMeta
 	def __init__(self, user_input):
 		#initializing job
-		self.action = None
-		self.user = None
 		#normalizing between DB and docopt
 		for k,v in user_input.items():	
 			k = re.sub("<|>|-|--", "", k)
@@ -25,10 +22,7 @@ class Job(object):
 			if validate_email(self.name) is True:
 				self.user = self.name
 				self.name = None
-			
-			if self.action is None:
-				self.action = "show"
-	
+				
 	def create_from_ui(self):
 		'''defaut values from user input'''
 		for k, v in self.__dict__.items():
@@ -41,18 +35,20 @@ class Job(object):
 				
 			elif k in ["q", "s", "k", "u", "r"]:
 				if v is True:
-					#print "updating parameter '%s' in project '%s'"%(k, user_input["<name>"])
-					self.update = True
+					print "updating parameters of project '%s'"%(self.name)
 					self.action = "update"
-					self.scope = k		
-					
-			elif k in ["monthly", "weekly", "daily"]:
-				if v is not None or False:
-					self.frequency = v
-				else:
-					self.frequency = "monthly"
+					self.update = True
+					self.up_scope = k		
+			
 			else:
-				pass
+				self.action = "show"		
+			#~ elif k in ["monthly", "weekly", "daily"]:
+				#~ if v is not None or False:
+					#~ self.frequency = v
+				#~ else:
+					#~ self.frequency = "monthly"
+			#~ else:
+				#~ pass
 		
 
 	def create_from_database(self):

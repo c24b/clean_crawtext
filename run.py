@@ -1,19 +1,10 @@
 from scheduler4 import Scheduler
-
+from multiprocessing import Pool
 if __name__ == "__main__":
 	s = Scheduler()
-	for n in s.get_list():
-		
-		try:
-			#print n['name'], n['action']
-			s.run_job()
-		except Exception:
-			continue
-		#~ if n["action"] == "crawl":
-			#~ s.run_job(n)
+	#p = Pool(5)
+	s.run_job("hallal2")
 	
-	
-		
 	
 	
 	
