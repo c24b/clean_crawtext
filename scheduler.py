@@ -20,72 +20,85 @@ class Scheduler(object):
 	def schedule(self, user_input):
 		'''Schedule a new job from user_input (crawtext.py)'''
 		j = Job(user_input)
-		if j.delete is True:
-			self.delete(j.name)
-			return
+		j.create_from_ui()
+		
+		#user
+		if j.user is not None and j.name is None:
+			#find user
+			#if user
+			if self.get_one({"user":j["user"]}) is not None:
+				#show every projects of the user
+				print "Project owned by %s"%j["user"] 
+				self.show_by(j,"user")
+				return True
+			#no user :error_msg
+			else:
+				print "User:%s is not already registered" %j["user"]
+				print "To register you as user %s:\n1/Create a new project:\n\tpython crawtext.py yournewproject\n2/Set Ownership to the project:\n\tpython crawtext.py yournewproject -u %s" %(j["user"],j["user"])
+				return False
+		
+		#create
 		elif j.name is not None:
-			j.create_from_ui()	
-			if j.update is False:
-				# selecting user
-				if j.user is not None and j.name is None:
-					#find user
-					#if user
-					if self.get_one({"user":j["user"]}) is not None:
-						#show every projects of the user
-						print "Project owned by %s"%j["user"] 
-						self.show_by(j,"user")
-						return True
-					#no user :error_msg
+			if j.action is not None:
+				#delete
+				if j.delete is True:
+					return self.delete(j.name)
+				#update
+				elif j.update is True:
+					#find existing project
+					existing = self.get_one({"name":j.name, "action": "crawl"})
+					if existing is not None:
+						print "Update existing project"
+						print existing
 					else:
-						print "User:%s is not already registered" %j["user"]
-						print "To register you as user %s:\n1/Create a new project:\n\tpython crawtext.py yournewproject\n2/Set Ownership to the project:\n\tpython crawtext.py yournewproject -u %s" %(j["user"],j["user"])
-						return False
-				#selecting project
-				elif j.name is not None:
-					#verify
-					if j.name in ["crawl", "delete", "archive", "report", "export"]:
-						print "**Project Name** can't be 'crawl', 'archive', 'report', 'export' or 'delete'"
-						print "\t*To generate a report:\n\t\tcrawtext report pesticides"
-						print "\t*To create an export :\n\t\tcrawtext export pesticides"
-						print "\t*To delete a projet :\n\t\tcrawtext delete pesticides"
-						print "\t*To archive a website :\n\t\tcrawtext archive www.lemonde.fr"
-						return False
-					#create
-					elif self.get_one({"name":j.name}) is None:							
 						print "No existing project found!"
-						return j.create()
-					#show
-					else:
-						print "Jobs of the project %s"%j.name
-						#self.show(j.name)
-						self.show_by(j.__dict__, "name")
-						return True
-			#update
-			elif j.udpate is True:
-				#find existing project
-				existing = self.get_one({"name":j.name, "action": crawl})
-				print "Update existing project"
-				#	j.update()
+						#return j.create()
+					#	j.update()
+					return True
+			else:
+				#verify
+				if j.name in ["crawl", "delete", "archive", "report", "export"]:
+					print "**Project Name** can't be 'crawl', 'archive', 'report', 'export' or 'delete'"
+					print "\t*To generate a report:\n\t\tcrawtext report pesticides"
+					print "\t*To create an export :\n\t\tcrawtext export pesticides"
+					print "\t*To delete a projet :\n\t\tcrawtext delete pesticides"
+					print "\t*To archive a website :\n\t\tcrawtext archive www.lemonde.fr"
+					return False
+				#create
+				elif self.get_one({"name":j.name}) is None:							
+					print "No existing project found!"
+					#self.create(j.name)
+					return j.create()
+				#show
+				else:
+					print "Jobs of the project %s"%j.name
+					print self.get_one({"name":j.name}) 
+					#print self.show(j.name)
+					return True
+					#return self.show_by(j.__dict__, "name")
+				
+		
+			
+		
 			#Job.create_from_database()
 			#j2.run()
 			#j['action'] is not None:
 			#create job
-		#delete
+		
 		else:
 			return
 				
 	def delete(self, job_name):
 		'''Delete existing project'''
 		job_list = self.get_list(job_name)
-		if job_list is not False:
+		if job_list is not None:
 			for n in job_list:
 				self.collection.remove(n)
-				print "Sucessfully deleted task:", n['name']
-				
-			print "All the tasks of the project %s have been sucessfully deleted !"%job_name['name']
+				print "Sucessfully deleted task:%s on " %(n['action'],n['name'])
+			print "All the tasks of the project %s have been sucessfully deleted !"%job_name
 			return True
 		else:
-			print "No existing project %s with active tasks found" %job_name['name']
+			print "No existing project %s with active tasks found" %job_name
 			return False
 			
 	def get_one(self, project_name):
@@ -105,21 +118,36 @@ class Scheduler(object):
 		'''get all the current job'''		
 		
 		if project_name is None:
-			return False
+			return None
 			#return [n["project"] for n in self.collection.distinct("name")]
-		if type(project_name) == dict:
+		elif type(project_name) == dict:
 			project_list = [n for n in self.collection.find(project_name)]
 			if len(project_list)> 0:
 				#print "*** Project %s: %s ****" %(project_name.keys(), project_name.values())
 				return project_list
-			else:
-				return  False
+			
+		elif type(project_name) == str:
+			project_list = [n for n in self.collection.find({"name":project_name})]
+			if len(project_list)> 0:
+				#print "*** Project %s: %s ****" %(project_name.keys(), project_name.values())
+				return project_list
 		else:
-			return False
-	
+			return None
+	def show(name):
+		project_list = self.get_list({"name": name})
+		if project_list is not None:
+			print "***\tProject: %s\t***" %(name)
+			for job in project_list:
+				for k, v in job.items():
+					if v is False or v is None:
+						continue
+					if k not in ['_id', by, '_key']:
+						print "\t-", k,'\t', v
+			return project_list
+			
 	def show_by(self, doc , by="name"):
 		project_list = self.get_list({str(by): doc[str(by)]})
-		if project_list is not False:
+		if project_list is not None:
 			print "***\tProject %s: %s\t***" %(str(by), str(doc[by]))
 			for job in project_list:
 				for k, v in job.items():
