@@ -9,8 +9,11 @@ import requests
 from page import Page
 
 class Job(object):
+	#__metaclass__ = ABCMeta
 	def __init__(self, user_input):
 		#initializing job
+		self.action = None
+		self.user = None
 		#normalizing between DB and docopt
 		for k,v in user_input.items():	
 			k = re.sub("<|>|-|--", "", k)
@@ -22,37 +25,41 @@ class Job(object):
 			if validate_email(self.name) is True:
 				self.user = self.name
 				self.name = None
-				
+			
+			if self.action is None:
+				self.action = "show"
+	
 	def create_from_ui(self):
 		'''defaut values from user input'''
+		self.frequency = None
 		for k, v in self.__dict__.items():
-			if k in ["report", "extract", "export", "delete", "archive", "crawl"]:
+			if k in ["run", "report", "extract", "export", "delete", "archive", "crawl"]:
 				if v is True:
 					self.action = k
 					self.start_date = datetime.today()
 					self.update = False
 						
 				
-			elif k in ["q", "s", "k", "u", "r"]:
+			elif k in ["u", "r"]:
 				if v is True:
-					print "updating parameters of project '%s'"%(self.name)
+					#print "updating parameter '%s' in project '%s'"%(k, user_input["<name>"])
 					self.update = True
-					self.up_scope = k		
-					
-			else:
-				self.action = "show"		
-			#~ elif k in ["monthly", "weekly", "daily"]:
-				#~ if v is not None or False:
-					#~ self.frequency = v
-				#~ else:
-					#~ self.frequency = "monthly"
-			#~ else:
-				#~ pass
-		
-	def update(self):
-		if self.up_scope is not None:
-			print self.up_scope
+					self.action = "manage"
+					self.scope = k
+
+			elif k in ["q", "s", "k"]:
+				if v is True:
+					self.update = True
+					self.action = "udpate"
+					self.scope = k				
 			
+			elif k in ['monthly', 'weekly', 'daily']:
+				if v is True:
+					self.frequency = k
+			else:
+				pass
+		
+
 	def create_from_database(self):
 		'''doc.action = crawl ==> CrawlJob(doc)'''
 		try:
@@ -61,18 +68,7 @@ class Job(object):
 			print self.action, "has not been implemented Yet"			
 			raise NotImplementedError
 
-	def create(self):
-		new = yes_no("Do you want to create a new CRAWL project?")
-		if new == 1:		
-			task_db = Database(TASK_MANAGER_NAME)
-			coll = task_db.create_coll(TASK_COLL)
-			coll.insert(self.__dict__)
-			print "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(self.name,self.name)
-			return True
-	def update(self):
-		
-	def delete(self):
-		
+
 	def __repr__(self):
 		'''print Job properties'''
 		return self.__dict__	
@@ -82,19 +78,43 @@ class Job(object):
 		print "running Job..."
 		pass
 				
+class CreateJob(Job):
+	def __init__(self, doc): 
+		self.start_date = datetime.now()
+		
+		for k, v in doc.items():
+			if v is not None or False:
+				setattr(self,k,v)
+		self.action = "crawl"
+		self.status = "inactive"
+		self.active = False
+		self.frequency = "monthly"
+
+	def run(self):
+		new = yes_no("Do you want to create a new CRAWL project?")
+		if new == 1:		
+			task_db = Database(TASK_MANAGER_NAME)
+			coll = task_db.create_coll(TASK_COLL)
+			coll.insert(self.__dict__)
+			print "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(self.name,self.name)
+			return self
+			
+
 class CrawlJob(Job):
 	def __init__(self, doc): 
-		print "Crawl"
 		self.date = datetime.now()
 		#required properties
 		self.query = None
 		self.key = None
 		self.file = None
+		self.expand = None
 		for k, v in doc.items():
 			setattr(self,k,v) 	
 		self.db = Database(self.name)
-		self.db.create_colls()
-		
+		self.sources = self.db.create_coll('sources')
+		self.results = self.db.create_coll('results')
+		self.logs = self.db.create_coll('logs')
+		self.queue = self.db.create_coll('queue')
 		
 	def get_bing(self):
 		''' Method to extract results from BING API (Limited to 5000 req/month). ''' 
@@ -173,6 +193,7 @@ class CrawlJob(Job):
 		return self
 		
 	def activate(self):
+		self.ex
 		if self.query is None:
 			print "No query search has been configured for crawl project\nPlease provide a query expression:\tcrawtext.py %s -q \"your_query_expression\""	
 			return False
@@ -188,19 +209,32 @@ class CrawlJob(Job):
 	
 			
 	def run(self):
+		print "running crawl on %i sources with query '%s'" %(self.db.sources.count(), self.query)
 		if self.activate():
 			start = datetime.now()
 			while self.db.queue.count > 0:
 				for url in self.db.queue.distinct("url"):
 					page = Page(url, self.query)
-					print page.status
+					if page.status is False:
+						self.db.logs.insert(page.bad_status())
+					else:
+						print page.__dict__
+						self.db.results.insert(page.info)
+						
 					self.db.queue.remove({"url": url})
 					if self.db.queue.count() == 0:
 						break
 			
 				if self.db.queue.count() == 0:		
 					break
-		
+			print "Crawl done succesfully"
+			end = datetime.now()
+			elapsed = end - start
+			print "Crawl done sucessfully:\n-%i results\n-%i non pertinents urls \n-%i errors. \nElapsed time %s" %(len([n for n in self.db.results.find()]), len([n for n in self.db.logs.find()]), len([n for n in self.db.logs.find({"error_code":"-1"})]),elapsed)
+			print "To export results, logs, sources:\n python crawtext.py export %s" %self.name
+		else:
+			pass
+			
 		
 		#~ start = datetime.now()
 		#~ while self.db.queue.count > 0:
@@ -223,14 +257,12 @@ class CrawlJob(Job):
 			#~ if self.db.queue.count() == 0:		
 				#~ break
 		#~ 
-		#~ end = datetime.now()
-		#~ elapsed = end - start
-		#~ print "crawl finished in %s" %(elapsed)
-		#~ print self.db.stats()
+		
 		return self
 	
 class ReportJob(Job):
 	def __init__(self, doc):
+		print "Report Job"
 		self.date = datetime.now()
 		for k, v in doc.items():
 			setattr(self,k,v) 	
@@ -258,17 +290,14 @@ class ExportJob(Job):
 		self.date = datetime.now()
 		for k, v in doc.items():
 			setattr(self,k,v) 	
-		pass
-class RunJob(Job):
-	def __init__(self, doc):
-		self.date = datetime.now()
-		for k, v in doc.items():
-			setattr(self,k,v) 	
-		pass
+	def run(self):
+		print "Exporting %s" %self.name
+		
+		
+#~ class RunJob(Job):
+	#~ def __init__(self, doc):
+		#~ self.date = datetime.now()
+		#~ for k, v in doc.items():
+			#~ setattr(self,k,v) 	
+		
 
-class DeleteJob(Job):
-	def __init__(self, doc):
-		self.date = datetime.now()
-		for k, v in doc.items():
-			setattr(self,k,v) 	
-		pass
