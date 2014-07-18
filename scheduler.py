@@ -36,7 +36,7 @@ class Scheduler(object):
 				print "To register you as user %s:\n1/Create a new project:\n\tpython crawtext.py yournewproject\n2/Set Ownership to the project:\n\tpython crawtext.py yournewproject -u %s" %(j["user"],j["user"])
 				return False
 		#selecting project
-		elif j.name is not None and j.action != "update":
+		elif j.name is not None and j.udpate is False:
 				#verifying that name is correct
 				if j.name in ["crawl", "delete", "archive", "report", "export"]:
 					print "**Project Name** can't be 'crawl', 'archive', 'report', 'export' or 'delete'"
@@ -48,10 +48,11 @@ class Scheduler(object):
 				#project doesn't exist: create new one
 				elif self.get_one({"name":j.name}) is None:							
 					print "No existing project found!"
-					j.action = "create"
-					j2 = Job.create_from_database(j)
-					j2.run()
-					return True
+					return j.create()
+					#~ j.action = "create"
+					#~ #j2 = Job.create_from_database()
+					#~ j.run()
+					
 				#project exist: show
 				else:
 					print "Jobs of the project %s"%j.name
@@ -59,10 +60,12 @@ class Scheduler(object):
 					return True
 		
 		#udpating existing project
-		elif j.name is not None and j.action == "update":
+		elif j.name is not None and j.update is True:
+			existing = Job(self.get_one({"name":j.name, "action": crawl}))
 			print "Update existing project"
-			j2 = Job.create_from_database(j)
-			j2.run()
+			j.update()
+			#Job.create_from_database()
+			#j2.run()
 			#j['action'] is not None:
 			#create job
 		else:

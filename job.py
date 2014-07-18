@@ -36,10 +36,9 @@ class Job(object):
 			elif k in ["q", "s", "k", "u", "r"]:
 				if v is True:
 					print "updating parameters of project '%s'"%(self.name)
-					self.action = "update"
 					self.update = True
 					self.up_scope = k		
-			
+					
 			else:
 				self.action = "show"		
 			#~ elif k in ["monthly", "weekly", "daily"]:
@@ -59,7 +58,18 @@ class Job(object):
 			print self.action, "has not been implemented Yet"			
 			raise NotImplementedError
 
-				
+	def create(self):
+		new = yes_no("Do you want to create a new CRAWL project?")
+		if new == 1:		
+			task_db = Database(TASK_MANAGER_NAME)
+			coll = task_db.create_coll(TASK_COLL)
+			coll.insert(self.__dict__)
+			print "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(self.name,self.name)
+			return True
+	def update(self):
+		
+	def delete(self):
+		
 	def __repr__(self):
 		'''print Job properties'''
 		return self.__dict__	
@@ -69,27 +79,6 @@ class Job(object):
 		print "running Job..."
 		pass
 				
-class CreateJob(Job):
-	def __init__(self, doc): 
-		self.start_date = datetime.now()
-		
-		for k, v in doc.items():
-			if v is not None or False:
-				setattr(self,k,v)
-		self.action = "crawl"
-		self.status = "inactive"
-		self.active = False
-		
-	def run(self):
-		new = yes_no("Do you want to create a new CRAWL project?")
-		if new == 1:		
-			task_db = Database(TASK_MANAGER_NAME)
-			coll = task_db.create_coll(TASK_COLL)
-			coll.insert(self.__dict__)
-			print "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(self.name,self.name)
-			return True
-			
-
 class CrawlJob(Job):
 	def __init__(self, doc): 
 		print "Crawl"
@@ -273,12 +262,7 @@ class RunJob(Job):
 		for k, v in doc.items():
 			setattr(self,k,v) 	
 		pass
-class UpdateJob(Job):
-	def __init__(self, doc):
-		self.date = datetime.now()
-		for k, v in doc.items():
-			setattr(self,k,v) 	
-		pass
+
 class DeleteJob(Job):
 	def __init__(self, doc):
 		self.date = datetime.now()
