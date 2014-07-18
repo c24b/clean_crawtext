@@ -7,6 +7,7 @@ from utils import yes_no
 from database import *
 import requests
 from page import Page
+import sys
 
 class Job(object):
 	#__metaclass__ = ABCMeta
@@ -16,9 +17,10 @@ class Job(object):
 		self.user = None
 		#normalizing between DB and docopt
 		for k,v in user_input.items():	
-			k = re.sub("<|>|-|--", "", k)
-			if k not in ["task_db", "coll", "job", "collection"]:
-				setattr(self,k,v)
+			if v is not False:
+				k = re.sub("<|>|-|--", "", k)
+				if k not in ["task_db", "coll", "job", "collection"]:
+					setattr(self,k,v)
 			
 		#configuring job	
 		if self.name is not None and self.user is None:
@@ -26,47 +28,34 @@ class Job(object):
 				self.user = self.name
 				self.name = None
 			
-			if self.action is None:
-				if self.get_one
-				self.show  = True
+			
 	
 	def create_from_ui(self):
 		'''defaut values from user input'''
-		self.frequency = None
 		for k, v in self.__dict__.items():
-			if k in ["run", "report", "extract", "export", "delete", "archive", "crawl"]:
-				if v is True:
+			if v is True or v is not None or v != "":
+				if k in ["report", "extract", "export", "archive"]:
 					self.action = k
 					self.start_date = datetime.today()
-					self.update = False
-						
+					self.update = False			
 				
-			elif k in ["u", "r"]:
-				if v is True:
-					#print "updating parameter '%s' in project '%s'"%(k, user_input["<name>"])
-					self.update = True
-					#self.action = "manage"
-					self.scope = k
-					self.freq = ""
-					freq = ["monthly","daily", "weekly"]
-					for f in freq:
-						try:
-							self.freq = self.__dict__[freq].key()
-						except TypeError:
-							self.freq = "monthly"
+				elif k in ["u", "r"]:
+					#option for the all bunch of project
+					if v is True:						
+						self.show = False
+						self.update = "all"
 					
-					
-			elif k in ["q", "s", "k"]:
-				if v is True:
-					self.update = True
-					#self.action = "udpate"
-					self.scope = k				
+				elif k in ["q", "s", "k"]:
+					#option for the defaut crawl project
+					#print "adding parameter '%s' for crawl project '%s'"%(k, self.name)
+					if v is True:
+						self.update = "crawl"
+						self.action = "crawl"
+						self.show = False
+				else:
+					continue
+			return sys.exit()
 			
-			#~ elif k in ['monthly', 'weekly', 'daily']:
-				#~ if v is True:
-					#~ self.frequency = k
-			else:
-				pass
 		
 
 	def create_from_database(self):
