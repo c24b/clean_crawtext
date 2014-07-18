@@ -55,7 +55,7 @@ class Scheduler(object):
 				#project exist: show
 				else:
 					print "Jobs of the project %s"%j.name
-					self.show_by(j.__dict, "name")
+					self.show_by(j.__dict__, "name")
 					return True
 		
 		#udpating existing project
