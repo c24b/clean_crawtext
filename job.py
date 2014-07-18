@@ -44,18 +44,19 @@ class Job(object):
 				if v is True:
 					#print "updating parameter '%s' in project '%s'"%(k, user_input["<name>"])
 					self.update = True
-					self.action = "manage"
+					#self.action = "manage"
 					self.scope = k
-
+					self.freq = [ k for k,v in [self.__dict__["monthly"], self.__dict__["weekly"], self.__dict__["daily"]] if v is not False]
+					
 			elif k in ["q", "s", "k"]:
 				if v is True:
 					self.update = True
-					self.action = "udpate"
+					#self.action = "udpate"
 					self.scope = k				
 			
-			elif k in ['monthly', 'weekly', 'daily']:
-				if v is True:
-					self.frequency = k
+			#~ elif k in ['monthly', 'weekly', 'daily']:
+				#~ if v is True:
+					#~ self.frequency = k
 			else:
 				pass
 		

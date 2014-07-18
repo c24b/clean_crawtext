@@ -17,25 +17,26 @@ Usage:
 	crawtext.py <name> -s set <url>
 	crawtext.py <name> -s append <file>
 	crawtext.py <name> -k set <key>
-	crawtext.py <name> -k append <key>
+	crawtext.py <name> -k append [<key>]
 	crawtext.py <name> -s expand
 	crawtext.py <name> -s delete [<url>]
 	crawtext.py <name> -s delete					
-	crawtext.py <name> -r (monthly|weekly|daily)
+	crawtext.py <name> -r (<monthly>|<weekly>|<daily>)
+	crawtext.py start <name>
 	crawtext.py (-h | --help)
   	crawtext.py --version
   	
 Options:
 	Projets:
 	# Pour consulter un projet : 	crawtext.py pesticides
-	# Pour consulter vos projets :	crawtext.py show vous@cortext.net
+	# Pour consulter vos projets :	crawtext.py vous@cortext.net
 	# Pour obtenir un rapport : 	crawtext.py report pesticides
 	# Pour obtenir un export : 		crawtext.py export pesticides
 	# Pour supprimer un projet : 	crawtext.py delete pesticides
 	Proprietaire:
-	# pour définir le propriétaire du project: crawtext.py pesticides -u vous@cortext.net
+	# pour définir le propriétaire du project: crawtext pesticides -u vous@cortext.net
 	Requête:
-	# pour définir la requête: crawtext.py pesticides -q "pesticides AND DDT"
+	# pour définir la requête: crawtext pesticides -q "pesticides AND DDT"
 	Sources:
 	# pour définir les sources d'après un fichier :	crawtext.py pesticides -s set sources.txt	
 	# pour ajouter des sources d'après un fichier :	crawtext.py pesticides -s append sources.txt
@@ -46,10 +47,8 @@ Options:
 	# pour supprimer toutes les sources :			crawtext.py pesticides -s delete
 	Récurrence
 	# pour définir la récurrence :                	crawtext.py pesticides -r monthly|weekly|daily
-	Archive
-	#pour archive un site							crawtext.py www.lemonde.fr
-	#pour spécifier un format de site				crawtext.py www.wikipedia.fr -f wiki
-	#pour spécifier un format de site				crawtext.py www.marmiton.fr -f forum
+	Executer un projet								crawtext.py run pesticides
+	
 '''
 
 __all__ = ['crawtext', 'manager','database', "scheduler", "dispatcher"]
@@ -63,6 +62,13 @@ import sys
  
 CRAWTEXT = "crawtext"
 if __name__== "__main__":
+		
+	#~ user_input = docopt(__doc__)
+		#~ is_valid = validate_email(user_input['<email>'])
+		#~ if is_valid:
+			#~ user_input['<name>'] = user_input['<email>']
+		#~ else:
+			
 	s = Scheduler()
 	s.schedule(docopt(__doc__))
 	

@@ -64,7 +64,7 @@ class Scheduler(object):
 					print "Jobs of the project '%s'"%j.name
 					self.show_by(j.__dict__, "name")
 					#print "To activate crawl, you need to configure the 2 required options:\n\t- A query\n\t- A list of url to crawl OR a search API Key\n To see how to add parameters to the current job: crawtext.py --help" 
-		elif j.action == "manage":
+		elif j.udpate is True:
 		#updating every job of the project
 			job_list = [n for n in self.collection.find({"name":j.name})]
 			if len(job_list) == 0:
@@ -80,17 +80,24 @@ class Scheduler(object):
 				
 				for n in self.collection.find({"name":j.name}):
 					self.collection.update({"_id":n["_id"]}, {"$set":{"frequency":j.frequency}}, upsert=False)
-		#managing existing crawljob
-		elif j.action == "manage":
-			try:
-				scheduled_job = self.collection.find_all({"name":j.name})
-				for n in scheduled_job:
-					print n
-			except IndexError:
-				print "No existing crawl project '%s' to update" %j.name
-				sys.exit()
+		
+			else:
+				try:
+					scheduled_job = self.collection.find_all({"name":j.name})
+					for n in scheduled_job:
+						print n
+				except IndexError:
+					print "No existing crawl project '%s' to update" %j.name
+					sys.exit()
 				
-		elif j.action == "update":	
+				if j.scope == "q":
+					print "updating query"
+				elif j.scope == "s":
+					print "updating sources"
+				elif j.scope == "k":
+					print "updating key"
+				
+					
 		
 			try:
 				scheduled_job = self.collection.find_one({"name":j.name, "action":'crawl'})
