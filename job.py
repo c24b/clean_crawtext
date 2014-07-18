@@ -49,7 +49,10 @@ class Job(object):
 			#~ else:
 				#~ pass
 		
-
+	def update(self):
+		if self.up_scope is not None:
+			print self.up_scope
+			
 	def create_from_database(self):
 		'''doc.action = crawl ==> CrawlJob(doc)'''
 		try:

@@ -20,56 +20,60 @@ class Scheduler(object):
 	def schedule(self, user_input):
 		'''Schedule a new job from user_input (crawtext.py)'''
 		j = Job(user_input)
-		j.create_from_ui()
-		# selecting user
-		if j.user is not None and j.name is None:
-			#find user
-			#if user
-			if self.get_one({"user":j["user"]}) is not None:
-				#show every projects of the user
-				print "Project owned by %s"%j["user"] 
-				self.show_by(j,"user")
-				return True
-			#no user :error_msg
-			else:
-				print "User:%s is not already registered" %j["user"]
-				print "To register you as user %s:\n1/Create a new project:\n\tpython crawtext.py yournewproject\n2/Set Ownership to the project:\n\tpython crawtext.py yournewproject -u %s" %(j["user"],j["user"])
-				return False
-		#selecting project
-		elif j.name is not None and j.udpate is False:
-				#verifying that name is correct
-				if j.name in ["crawl", "delete", "archive", "report", "export"]:
-					print "**Project Name** can't be 'crawl', 'archive', 'report', 'export' or 'delete'"
-					print "\t*To generate a report:\n\t\tcrawtext report pesticides"
-					print "\t*To create an export :\n\t\tcrawtext export pesticides"
-					print "\t*To delete a projet :\n\t\tcrawtext delete pesticides"
-					print "\t*To archive a website :\n\t\tcrawtext archive www.lemonde.fr"
-					return False
-				#project doesn't exist: create new one
-				elif self.get_one({"name":j.name}) is None:							
-					print "No existing project found!"
-					return j.create()
-					#~ j.action = "create"
-					#~ #j2 = Job.create_from_database()
-					#~ j.run()
-					
-				#project exist: show
-				else:
-					print "Jobs of the project %s"%j.name
-					self.show_by(j.__dict__, "name")
-					return True
-		
-		#udpating existing project
-		elif j.name is not None and j.update is True:
-			existing = Job(self.get_one({"name":j.name, "action": crawl}))
-			print "Update existing project"
-			j.update()
+		if j.delete is True:
+			self.delete(j.name)
+			return
+		elif j.name is not None:
+			j.create_from_ui()	
+			if j.update is False:
+				# selecting user
+				if j.user is not None and j.name is None:
+					#find user
+					#if user
+					if self.get_one({"user":j["user"]}) is not None:
+						#show every projects of the user
+						print "Project owned by %s"%j["user"] 
+						self.show_by(j,"user")
+						return True
+					#no user :error_msg
+					else:
+						print "User:%s is not already registered" %j["user"]
+						print "To register you as user %s:\n1/Create a new project:\n\tpython crawtext.py yournewproject\n2/Set Ownership to the project:\n\tpython crawtext.py yournewproject -u %s" %(j["user"],j["user"])
+						return False
+				#selecting project
+				elif j.name is not None:
+					#verify
+					if j.name in ["crawl", "delete", "archive", "report", "export"]:
+						print "**Project Name** can't be 'crawl', 'archive', 'report', 'export' or 'delete'"
+						print "\t*To generate a report:\n\t\tcrawtext report pesticides"
+						print "\t*To create an export :\n\t\tcrawtext export pesticides"
+						print "\t*To delete a projet :\n\t\tcrawtext delete pesticides"
+						print "\t*To archive a website :\n\t\tcrawtext archive www.lemonde.fr"
+						return False
+					#create
+					elif self.get_one({"name":j.name}) is None:							
+						print "No existing project found!"
+						return j.create()
+					#show
+					else:
+						print "Jobs of the project %s"%j.name
+						#self.show(j.name)
+						self.show_by(j.__dict__, "name")
+						return True
+			#update
+			elif j.udpate is True:
+				#find existing project
+				existing = self.get_one({"name":j.name, "action": crawl})
+				print "Update existing project"
+				#	j.update()
 			#Job.create_from_database()
 			#j2.run()
 			#j['action'] is not None:
 			#create job
+		#delete
 		else:
-			print j.__dict__
+			return
+				
 	def delete(self, job_name):
 		'''Delete existing project'''
 		job_list = self.get_list(job_name)
