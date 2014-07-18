@@ -27,7 +27,8 @@ class Job(object):
 				self.name = None
 			
 			if self.action is None:
-				self.action = "show"
+				if self.get_one
+				self.show  = True
 	
 	def create_from_ui(self):
 		'''defaut values from user input'''
@@ -46,7 +47,14 @@ class Job(object):
 					self.update = True
 					#self.action = "manage"
 					self.scope = k
-					self.freq = [ k for k,v in [self.__dict__["monthly"], self.__dict__["weekly"], self.__dict__["daily"]] if v is not False]
+					self.freq = ""
+					freq = ["monthly","daily", "weekly"]
+					for f in freq:
+						try:
+							self.freq = self.__dict__[freq].key()
+						except TypeError:
+							self.freq = "monthly"
+					
 					
 			elif k in ["q", "s", "k"]:
 				if v is True:
