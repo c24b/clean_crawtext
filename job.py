@@ -1,13 +1,14 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 import re
 from validate_email import validate_email
 from datetime import datetime
 from utils import yes_no
 from database import *
+<<<<<<< HEAD
 import requests
 from page import Page
 import sys
+=======
+>>>>>>> parent of 2eaff00... Adding sources configuration
 
 class Job(object):
 	#__metaclass__ = ABCMeta
@@ -58,20 +59,65 @@ class Job(object):
 		try:
 			return globals()[(self.action).capitalize()+"Job"](self.__dict__) 
 		except KeyError:
+<<<<<<< HEAD
 			print self.action, "has not been implemented Yet"			
 			raise NotImplementedError
 
+=======
+			return NotImplementedError
+	
+				
+	def __repr__(self):
+		'''print Job properties'''
+		return self.__dict__	
+			    
+		
+>>>>>>> parent of 2eaff00... Adding sources configuration
 	def run(self):
 		#self.action = "crawl"
 		pass
 				
+<<<<<<< HEAD
 
+=======
+class CreateJob(Job):
+	def __init__(self, doc): 
+		self.start_date = datetime.now()
+		
+		for k, v in doc.items():
+			if v is not None or False:
+				setattr(self,k,v)
+		self.action = "crawl"
+		self.status = "inactive"
+		self.active = False
+		
+	def run(self):
+		new = yes_no("Do you want to create a new CRAWL project?")
+		if new == 1:		
+			task_db = Database(TASK_MANAGER_NAME)
+			coll = task_db.create_coll(TASK_COLL)
+			coll.insert(self.__dict__)
+			print "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(self.name,self.name)
+			return True
+			
+class UpdateJob(Job):
+	def __init__(self, doc): 
+		self.date = datetime.now()
+		for k, v in doc.items():
+			setattr(self,k,v) 	
+	
+	def run(self):
+		print self.scope
+		pass	
+		
+>>>>>>> parent of 2eaff00... Adding sources configuration
 class CrawlJob(Job):
 	def __init__(self, doc): 
 		self.date = datetime.now()
 		#required properties
 		self.query = None
 		self.key = None
+<<<<<<< HEAD
 		self.file = None
 		self.expand = None
 		for k, v in doc.items():
@@ -81,6 +127,25 @@ class CrawlJob(Job):
 		self.results = self.db.create_coll('results')
 		self.logs = self.db.create_coll('logs')
 		self.queue = self.db.create_coll('queue')
+=======
+		self.filename = None
+		for k, v in doc.items():
+			setattr(self,k,v) 	
+		self.db = Database(self.name)
+		self.db.create_colls()	
+		
+		#properties
+		#pour définir les sources d'après un fichier :	crawtext pesticides -s set sources.txt	
+	# pour ajouter des sources d'après un fichier :	crawtext pesticides -s append sources.txt
+	# pour définir les sources d'après Bing :		crawtext pesticides -k set 12237675647
+	# pour ajouter des sources d'après Bing :		crawtext pesticides -k append 12237675647
+	# pour ajouter des sources automatiquement :	crawtext pesticides -s expand
+	# pour supprimer une source :					crawtext pesticides -s delete www.latribune.fr
+	#pour ajouter une nouvelle sources				crawtext pesticides -s add www.latribune.fr
+	# pour supprimer toutes les sources :			crawtext pesticides -s delete
+	#Récurrence
+	# pour définir la récurrence :                	crawtext pesticides -r monthly|weekly|daily
+>>>>>>> parent of 2eaff00... Adding sources configuration
 		
 	def get_bing(self):
 		''' Method to extract results from BING API (Limited to 5000 req/month). ''' 
@@ -111,17 +176,23 @@ class CrawlJob(Job):
 				self.insert_url(url, origin=self.file)
 			return True
 		except Exception:
+<<<<<<< HEAD
 			self.status_code = -2
 			self.error_type = "Error fetching results from file: %s.\nFile doesn't not exists or has a wrong name.\nPlease set up a correct filename:\n\t crawtext.py %s -s append your_sources_file.txt" %(self.filename, self.name)
 			self.status = False
+=======
+			self.status_code = -1
+			self.error_type = "Error fetching results from file: %s.\n>>> Check if file exists" %self.file
+			print self.error_type
+>>>>>>> parent of 2eaff00... Adding sources configuration
 			return False
 	
 	def expand(self):
 		'''Expand sources url adding results urls collected from previous crawl'''
 		for url in self.db.results.distinct("url"):
 			if url not in self.db.sources.find({"url": url}):
-				self.insert_url(url, origin="automatic")
-		return True
+				self.insert_url(url, origin="expand")
+		return
 				
 	def insert_url(self, url, origin="default"):
 		if url not in self.db.sources.find({"url": url}):
@@ -139,6 +210,7 @@ class CrawlJob(Job):
 			
 	def collect_sources(self):
 		''' Method to add new seed to sources and send them to queue if sourcing is deactivate'''
+<<<<<<< HEAD
 		try:
 			if self.file is not None:
 				print "Getting local urls"
@@ -150,6 +222,18 @@ class CrawlJob(Job):
 			
 		except Exception as e:
 			print ">>>> collecting source error:", e
+=======
+		if self.query is not None:
+			if self.filename is not None:
+				print self.filename
+				self.get_local()
+			if self.key is not None:
+				print self.key
+				self.get_bing()
+			#~ if self.expand is True:
+				#~ self.expand()
+		else:
+>>>>>>> parent of 2eaff00... Adding sources configuration
 			return False
 		
 	def send_seeds_to_queue(self):
@@ -159,6 +243,7 @@ class CrawlJob(Job):
 		return self
 		
 	def activate(self):
+<<<<<<< HEAD
 		self.ex
 		if self.query is None:
 			print "No query search has been configured for crawl project\nPlease provide a query expression:\tcrawtext.py %s -q \"your_query_expression\""	
@@ -202,6 +287,23 @@ class CrawlJob(Job):
 			pass
 			
 		
+=======
+		if self.query is not None:
+			if self.filename is not None or self.key is not None:
+				self.collect_sources()
+				return self.send_seeds_to_queue()
+			else:
+				print "No sources have been configured for crawl project\n Please provide or a list of url using a file\nA\)To define sources to crawl using a file:\tcrawtext.py %s -s set your_sources_file.txt\nB\)To define sources to crawl using search option adding a Bing API key crawtext %s -k set your_api_key" %(self.name, self.name)
+		else:
+			print "No query search has been configured for crawl project\nPlease provide a query expression:\tcrawtext.py %s -q \"your_query_expression\""
+			
+	def run(self):
+		if self.f is True or self.q is True:
+			self.activate()
+		else:
+			print "Crawler has 2 required values: a Query and a sources collection (created by giving urls, or search API key"
+		#~ self.activate()
+>>>>>>> parent of 2eaff00... Adding sources configuration
 		#~ start = datetime.now()
 		#~ while self.db.queue.count > 0:
 			#~ for url in self.db.queue.distinct("url"):

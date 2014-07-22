@@ -56,10 +56,27 @@ class Scheduler(object):
 						sys.exit()
 					return True
 				else:
+					
+					#~ if self.get_one({"name":j.name, "action":"crawl"}) is None:
+						#~ print "No crawl project found!"
+						#~ j.action ="create"
+						#~ new_job = j.__dict__
+						#~ new_job = Job(new_job)
+						#~ new_job = new_job.create_from_database()
+						#~ return new_job.run()
+					#~ 
+					#~ 
+					#~ #self.get_one({"name":j.name, "action":"archive"}) is None:
+						#~ #print "No archive project found!"
+						#~ 
+					#~ else:
 					print "Jobs of the project %s"%j.name
 					self.show_by(j.__dict__, "name")
 					#print "To activate crawl, you need to configure the 2 required options:\n\t- A query\n\t- A list of url to crawl OR a search API Key\n To see how to add parameters to the current job: crawtext.py --help" 
-					return True							
+					return True	
+					
+					
+							
 		elif j.action == "update":
 			if j.scope == "u":
 				for n in self.collection.find({"name":j.name}):
@@ -70,9 +87,10 @@ class Scheduler(object):
 			elif j.scope == "q":
 				print "Setting up query %s for the crawl project %s" %(j.query, j.name)
 				j._id = self.collection.find({"name":j.name, "action":"crawl"})[0]['_id']
-				self.collection.update({"_id":j._id}, {"$set":{"query":j.query}}, upsert=False)
+				self.collection.update({"_id":j._id}, {"$set":{"user":j.user}}, upsert=False)
 				
 			elif j.scope == "s":
+<<<<<<< HEAD
 				if j.append is True:
 					print "adding sources file %s to crawl scope" %j.file
 					j._id = self.collection.find({"name":j.name, "action":"crawl"})[0]['_id']
@@ -98,32 +116,25 @@ class Scheduler(object):
 								queue.remove({"url":n["url"]})
 				else:
 					pass	
+=======
+				print "Configuring sources"
+				#self.insert_url()
+				pass
+				#~ j._id = self.collection.find({"name":j.name, "action":"crawl"})[0]['_id']
+				#~ self.collection.update({"_id":j._id}, {"$set":{"sources":j.user}}, upsert=False)
+				
+>>>>>>> parent of 2eaff00... Adding sources configuration
 			elif j.scope == "k":
 				print "Configuring search API"
-				if j.set is True:
-					print "Configure a new api key"
-					j._id = self.collection.find({"name":j.name, "action":"crawl"})[0]['_id']
-					self.collection.update({"_id":j._id}, {"$set":{"key":j.key}}, upsert=False)
-				elif j.append is True:
-					print "Appending a new api key to existing"
-					
+				j._id = self.collection.find({"name":j.name, "action":"crawl"})[0]['_id']
+				self.collection.update({"_id":j._id}, {"$set":{"key":j.key}}, upsert=False)
+				
 			elif j.scope == "r":
 				print "Configuring frequency of call for every projects"
 				for n in self.collection.find({"name":j.name}):
 					self.collection.update({"_id":n["_id"]}, {"$set":{"frequency":j.frequency}}, upsert=False)
 			else:
 				pass
-			#Updating status if required elements are set	
-			for n in self.collection.find({"name":j.name}):
-				try:
-					if n['query'] is not None and n['key'] is not None:
-						self.collection.update({"_id":n["_id"]}, {"$set":{"status":"active"}}, upsert=False)
-					elif n['query'] is not None and n['filename'] is not None:
-						self.collection.update({"_id":n["_id"]}, {"$set":{"status":"active"}}, upsert=False)
-					else:
-						pass
-				except KeyError:
-					pass
 		elif j.action == "archive":
 			
 			j.name = j.url
@@ -135,7 +146,11 @@ class Scheduler(object):
 			else:
 				print "Website %s has been already archived" %j.name
 				self.show_by(j.__dict__, "name")
+				#self.collection.update({"_id": j._id}, {"$push":{"date": datetime.now()}})
+				#print "Job %s sucessfully updated on %s"%(j.action, j.name)
+			#self.collection.update({"_id":j._id}, {"$set":{"user":j.user}}, upsert=False)
 		elif j.action == "delete":
+<<<<<<< HEAD
 			if j.s is True:
 				project_db = Database(j.name)
 				sources = project_db.create_coll('sources')
@@ -155,6 +170,9 @@ class Scheduler(object):
 					print "Cleaning up url sources for project %s" %(j.name)
 			else:	
 				self.delete(j.__dict__)
+=======
+			self.delete(j.__dict__)
+>>>>>>> parent of 2eaff00... Adding sources configuration
 		else:
 			existing_crawl_job = self.collection.find_one({"name":j.name, "action":"crawl"})
 			j.initial_action = j.action
@@ -247,16 +265,10 @@ class Scheduler(object):
 			for n in project_list:
 				j = Job(n)
 				j2 = j.create_from_database()
-				try:
-					j2.run()
-				except NotImplementedError:
-					continue
+				j2.run()
 		else:
 			project_list = self.get_list({"name":job_name})
 			for n in project_list:
 				j = Job(n)
 				j2 = j.create_from_database()
-				try:
-					j2.run()
-				except NotImplementedError:
-					continue
+				j2.run()
