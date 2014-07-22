@@ -19,22 +19,28 @@ class Scheduler(object):
 		self.collection =self.task_db.create_coll(TASK_COLL)			
 			
 	def schedule(self, user_input):
-		#j = Job(user_input)
-		#j.create_from_ui()
-		job = self.create_from_ui(user_input)
-		if job['name'] is not None:
+		job = Job()
+		job.create_from_ui(user_input)
+		if job.name is not None and job.action is None:
+			#find existing project in Database
 			ex_job = self.get_one(job['name'])
 			if ex_job is None:
-				self.create()
-			if job['type'] != 'crawl':
-				sel	
-			if job['action'] == "create":
-				pass
+				job.create()
+			elif job.update is None:
+				
+			else:
+				job.show_project()		
+				if job['type'] != 'crawl':
+					pass	
+				if job['action'] == "create":
+					pass
 			elif job['action'] == "update":
 				pass
+			else:
+				job.show()
 			#find existing
 		else:
-			pass	
+			
 	def create_from_ui(self, user_input):
 		job_type = ["start", "delete", "report", "export", "archive"]
 		
