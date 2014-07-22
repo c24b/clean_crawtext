@@ -91,6 +91,7 @@ class Scheduler(object):
 				
 			elif j.scope == "s":
 <<<<<<< HEAD
+<<<<<<< HEAD
 				if j.append is True:
 					print "adding sources file %s to crawl scope" %j.file
 					j._id = self.collection.find({"name":j.name, "action":"crawl"})[0]['_id']
@@ -117,12 +118,17 @@ class Scheduler(object):
 				else:
 					pass	
 =======
+=======
+>>>>>>> parent of 2eaff00... Adding sources configuration
 				print "Configuring sources"
 				#self.insert_url()
 				pass
 				#~ j._id = self.collection.find({"name":j.name, "action":"crawl"})[0]['_id']
 				#~ self.collection.update({"_id":j._id}, {"$set":{"sources":j.user}}, upsert=False)
 				
+<<<<<<< HEAD
+>>>>>>> parent of 2eaff00... Adding sources configuration
+=======
 >>>>>>> parent of 2eaff00... Adding sources configuration
 			elif j.scope == "k":
 				print "Configuring search API"
@@ -151,6 +157,7 @@ class Scheduler(object):
 			#self.collection.update({"_id":j._id}, {"$set":{"user":j.user}}, upsert=False)
 		elif j.action == "delete":
 <<<<<<< HEAD
+<<<<<<< HEAD
 			if j.s is True:
 				project_db = Database(j.name)
 				sources = project_db.create_coll('sources')
@@ -170,6 +177,9 @@ class Scheduler(object):
 					print "Cleaning up url sources for project %s" %(j.name)
 			else:	
 				self.delete(j.__dict__)
+=======
+			self.delete(j.__dict__)
+>>>>>>> parent of 2eaff00... Adding sources configuration
 =======
 			self.delete(j.__dict__)
 >>>>>>> parent of 2eaff00... Adding sources configuration
