@@ -13,7 +13,7 @@ Usage:
 	crawtext.py export <name>
 	crawtext.py delete <name>
 	crawtext.py start <name>
-	crawtext.py <name> -u <user>
+	crawtext.py <name> -u <email>
 	crawtext.py <name> -q <query>
 	crawtext.py <name> -s set <url>
 	crawtext.py <name> -s append <file>

@@ -20,8 +20,6 @@ class Job(object):
 				setattr(self,k,v)
 		self.check_name_or_user()	
 		
-		
-	
 	def check_name_or_user(self):
 		if self.name is not None and self.user is None:
 			if validate_email(self.name) is True:
@@ -34,23 +32,31 @@ class Job(object):
 		self.update = None
 		self.action = None
 		for k, v in self.__dict__.items():
-			if k in ["report", "extract", "export", "archive"]:
-				self.action = k
-				self.start_date = datetime.today()
-				
-			elif k == "u" and self.__dict__['user'] is not None:
-				#option for the all bunch of project
-				self.update = "all"
-				self.action = "update"
-			elif k in ["q", "s", "k"] and v is True:
-				self.update = "crawl"
-				self.action = "update"
-				
-			elif k in ["monthly", "weekly", "daily"]:
-				self.freq = k
-				self.update = "all"
-				self.action = "update"
-			else:			
+			if v is True:
+				if k in ["report", "extract", "export", "archive"]:
+					self.action = k
+					self.start_date = datetime.today()
+					
+				elif k == "u" and self.__dict__['user'] is not None:
+					#option for the all bunch of project
+					self.update = "all"
+					self.action = "update"
+				elif k in ["q", "s", "k"] and v is True:
+					self.update = "crawl"
+					self.action = "update"
+				elif k in ['set', 'append', 'delete', 'expand']:
+					self.scope_action = k
+				else:				
+					pass
+			elif v is not None:
+				if k in ["monthly", "weekly", "daily"]:
+					self.freq = k
+					self.update = "all"
+					self.action = "update"
+				elif k not in ["db", "collection", "task_db", "database"]:
+					setattr(self,k,v)
+				else: pass
+			else:
 				continue
 		return self
 
