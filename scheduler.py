@@ -36,7 +36,8 @@ class Scheduler(object):
 		elif job.action is not None:
 			self.collection.insert(job.__dict__)
 			print "Sucessfully scheduled %s on project '%s'" %(job.action, job.name) 
-			
+		
+		#update job	
 		elif job.update is not None:
 			if job.update == "all":
 				print "updating EVERY job with given params"
@@ -48,7 +49,7 @@ class Scheduler(object):
 						ex_jobs = self.get_list({"name": job.name})
 						for doc in ex_jobs:
 							self.collection.update({"_id": doc['_id']}, {"$set":{"user": job.user}})
-							self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
+							#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
 						print "All jobs of project %s are sucessfully owned by %s"%(job.name, job.user)
 					else:
 						#Raise pymongo.errors.OperationFailure: database error: Unsupported projection option: $exists
@@ -56,7 +57,7 @@ class Scheduler(object):
 						ex_jobs = self.collection.find({"name": job.name})
 						for doc in ex_jobs:
 							self.collection.update({"_id": doc['_id']}, {"$set":{"user": job.user}})
-							self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})
+							#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})
 						print "Every job of the project '%s' are now belonging to %s."%(job.name, job.user)
 					
 					print self.show({"user":job.user})
@@ -66,14 +67,14 @@ class Scheduler(object):
 					ex_jobs = self.collection.find({"name": job.name})
 					for doc in ex_jobs:
 						self.collection.update({"_id": doc['_id']}, {"$set":{"repeat":job.value}})
-						self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
+						#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
 					print "Every job of the project '%s' will be run %s."%(job.name, job.value)
 					return 
 			elif job.update == "crawl":
 				
 				has_job = self.get_one({"name": job.name, "action": "crawl"})
 				if has_job is None:
-					self.create(job.__dict__)
+					return self.create(job.__dict__)
 				else:
 					
 					if job.scope == "q":
@@ -113,18 +114,20 @@ class Scheduler(object):
 								print "sources.db delete url	"
 							else:
 								print "sources.db drop	"
-				return self.collection.update({"_id": has_job['_id']}, {"date":{"$push": datetime.today}})
+					return self.collection.update({"_id": has_job['_id']}, {"date":{"$push": datetime.today}})
 			else:
 				#no update
 				return
+		#show user
 		elif job.user is not None:
 			has_user = self.get_one({"user": job.user})
 			if has_user is None:
 				print "No project found with user %s" %job.user
+				return 
 			else:
 				print "***Project owned by user: %s***" %job.user
-				self.show({"user": job.user})
-			return
+				return self.show({"user": job.user})
+			
 						
 	def create(self, project_dict):				
 		project_dict["action"] = "crawl"
@@ -196,18 +199,18 @@ class Scheduler(object):
 		else:
 			return None
 	
-	def show(self, name):
-		project_list = self.get_list({"name": name})
+	def show(self, values, by=None):
+		if by is not None:
+			project_list = self.get_list(values).sort(by, 1)
+		else:
+			project_list = self.get_list(values)
 		if project_list is not None:
-			print "******\tProject : %s    ******" %(name)
+			print "******\tProject : %s    ******" %(values.keys()[0])
 			for job in project_list:
-				if job["action"] == "crawl":
-					print "action:", job["action"]
 				for k,v in job.items():
 					if v is not False or v is not None:
 						print k, v
-					else:
-						pass
+				print "*******"
 				
 			return "*******************************************" 			
 		
