@@ -24,7 +24,7 @@ class Scheduler(object):
 		
 		
 		#create_or_show
-		if job.action is None:
+		if job.action is None and job.update is None:
 			has_job = self.get_one({"name": job.name})
 			if has_job is None:
 				job.action = "crawl"
@@ -39,6 +39,7 @@ class Scheduler(object):
 			#job.create_from_database()
 			#job.run()
 		elif job.update is not None:
+			print job.update
 			if job.update == "all":
 				print "updating EVERY job with given params"
 				#set ownership
@@ -63,18 +64,20 @@ class Scheduler(object):
 				else:
 					print job.freq
 					#update project_name frequency
-			elif job.udpate == "crawl":
+			elif job.update == "crawl":
 				print "Updating crawl project"
 				has_job = self.get_one({"name": job.name, "action": "crawl"})
 				if has_job is None:
 					self.create(job.__dict__)
 				else:
 					print "updating parameters"
-					if q is True:
+					if job.value == "q":
 						print "update crawl_job query"
+						print job.query
 						#update crawl_job query
-					elif k is True:
+					elif job.value == "k":
 						print "update crawl_job Key"
+						print job.key
 						#update crawl_job Key
 					else:
 						print "update crawl_job sources"

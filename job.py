@@ -46,27 +46,20 @@ class Job(object):
 		
 		#main action
 		action_list = ["report", "extract", "export", "archive"]
+		job_action = [k for k, v in self.__dict__.items() if v is True and k in action_list]
 		
 		#udpate all
 		update_list = ["u", "r"]
+		update_project = [k for k,v in self.__dict__.items() if v is True and k in update_list] 
 		
 		# crawl
 		crawl_values = ["q", "s", "k"]
 		crawl_option = ['set', 'append', 'delete', 'expand']
+		update_crawl = [k for k,v in self.__dict__.items() if v is True and k in crawl_values]
+		options_crawl =  [k for k,v in self.__dict__.items() if v is True and k in crawl_option]
 		
-		#variables
+		#user input values to insert
 		data = ['name', 'url', 'file', 'query', 'key','email', 'daily', 'weekly','monthly', 'user']
-		
-		#~ main_values = [(k,v) for k, v in self.__dict__.items() if v is True and v is not None]
-		#~ main_variables = [(k,v) for k in self.__dict__.items() if v is not None and k in var_list]
-		
-		job_action = [k for k, v in self.__dict__.items() if v is True and k in k in action_list]
-		
-		
-		update_project = [k for k,v in self.__dict__.items() if v is True and k in update_list] 
-		update_crawl = [k for k,v in self.__dict__.items() if v is True and v is not None and k in crawl_values]
-		options_crawl =  [(k,v) for k,v in self.__dict__.items() if v is True and v is not None and k in crawl_option]
-		
 		for k,v in self.__dict__.items():
 			if v is False:
 				del self.__dict__[k]
@@ -92,8 +85,11 @@ class Job(object):
 		elif len(update_crawl) != 0:
 			self.action = None
 			self.update = 'crawl'
-			self.values = update_crawl[0]
-			self.option = options_crawl[0]
+			self.value = update_crawl[0]
+			try:
+				self.option = options_crawl[0]
+			except IndexError:
+				self.option = None
 			return self
 		else:
 			self.action = None
