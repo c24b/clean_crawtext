@@ -21,6 +21,7 @@ class Scheduler(object):
 	def schedule(self, user_input):
 		job = Job(user_input)
 		job.create_from_ui()
+		print job.action
 		#create_or_show
 		if job.name is not None and job.action is None:
 			has_job = self.get_one({"name": job.name})
@@ -37,11 +38,26 @@ class Scheduler(object):
 			#job.run()
 		elif job.name is not None and job.update is not None:
 			if job.update == "all":
-				print "updating every job with given params"
+				print "updating EVERY job with given params"
 				#set ownership
 				if job.u is True:
-					print job.user_email
-					#update project_name user
+					ex_jobs = self.get_list({"user": job.email, "name": job.name})
+					job.user = job.email
+					if ex_jobs is None:
+						ex_jobs = self.get_list({"name": job.name})
+						for doc in ex_jobs:
+							self.collection.update({"_id": doc['_id']}, {"$set":{"user": job.user}})
+						print "All jobs of project %s are sucessfully owned by %s"%(job.name, job.user)
+					else:
+						#Raise pymongo.errors.OperationFailure: database error: Unsupported projection option: $exists
+						#ex_jobs = self.collection.find({"name": job.name}, {"user":{"$exists": False}})
+						ex_jobs = self.collection.find({"name": job.name})
+						for doc in ex_jobs:
+							self.collection.update({"_id": doc['_id']}, {"$set":{"user": job.user}})
+						print "Sucessfull updated every job of project %s to be owned by %s. Erase other users"%(job.name, job.user)
+					print "Job owned by %s" %(job.user)
+					print self.show({"name":job.name})
+					
 				#set frequency
 				else:
 					print job.freq
@@ -65,12 +81,12 @@ class Scheduler(object):
 			else:
 				#no update
 				pass
-		elif job.user is not None:
+		elif job.user is not None and job.name is None:
 			has_user = self.get_one({"user": job.user})
 			if has_user is None:
 				print "No project found with user %s" %job.user
 			else:
-				#print has_user
+				print job.user 
 				self.show_project()
 						
 	def create(self, project_dict):				

@@ -29,25 +29,28 @@ class Job(object):
 				
 	def create_from_ui(self):
 		'''defaut values from user input'''
-		self.update = None
-		self.action = None
 		for k, v in self.__dict__.items():
 			if v is True:
+				self.update = None
+				self.action = None
 				if k in ["report", "extract", "export", "archive"]:
+					self.update = None
 					self.action = k
 					self.start_date = datetime.today()
 					
-				elif k == "u" and self.__dict__['user'] is not None:
+				elif k == "u":
+					#print self.email
 					#option for the all bunch of project
 					self.update = "all"
 					self.action = "update"
+					self.user = self.email
 				elif k in ["q", "s", "k"] and v is True:
 					self.update = "crawl"
 					self.action = "update"
 				elif k in ['set', 'append', 'delete', 'expand']:
 					self.scope_action = k
 				else:				
-					pass
+					continue
 			elif v is not None:
 				if k in ["monthly", "weekly", "daily"]:
 					self.freq = k
