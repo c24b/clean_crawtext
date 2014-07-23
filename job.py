@@ -43,51 +43,59 @@ class Job(object):
 				
 	def create_from_ui(self):
 		'''defaut values from user input'''
+		
+		#main action
 		action_list = ["report", "extract", "export", "archive"]
+		
+		#udpate all
 		update_list = ["u", "r"]
+		
+		# crawl
 		crawl_values = ["q", "s", "k"]
 		crawl_option = ['set', 'append', 'delete', 'expand']
 		
-		for k, v in self.__dict__.items():
-			if v is False or v is None:
-				print k, "is empty"
+		#variables
+		data = ['name', 'url', 'file', 'query', 'key','email', 'daily', 'weekly','monthly', 'user']
+		
+		#~ main_values = [(k,v) for k, v in self.__dict__.items() if v is True and v is not None]
+		#~ main_variables = [(k,v) for k in self.__dict__.items() if v is not None and k in var_list]
+		
+		job_action = [k for k, v in self.__dict__.items() if v is True and k in k in action_list]
+		
+		
+		update_project = [k for k,v in self.__dict__.items() if v is True and k in update_list] 
+		update_crawl = [k for k,v in self.__dict__.items() if v is True and v is not None and k in crawl_values]
+		options_crawl =  [(k,v) for k,v in self.__dict__.items() if v is True and v is not None and k in crawl_option]
+		
+		for k,v in self.__dict__.items():
+			if k not in data:
 				del self.__dict__[k]
+		
+				
+		if len(job_action) != 0:
+			self.action = job_action[0]
+			self.update = None
+			self.start_date = datetime.now()
+			self.start_date = datetime.today()
+			return self
+		elif len(update_project) != 0:
+			self.action = None
+			self.update = update_project[0]
+			self.values = update_crawl[0]
+			return self
 			
+		elif len(update_crawl) != 0:
+			self.action = None
+			self.update = 'crawl'
+			self.values = update_crawl[0]
+			self.option = options_crawl[0]
+			return self
+		else:
+			self.action = None
+			self.update = None
+			return self
 		
 		
-		for k, v in self.__dict__.items():
-			if k is True:
-				if k in action_list:
-					self.update = None
-					self.action = k
-					self.start_date = datetime.today()
-					return self
-				if k in update_list:		
-					if k == "u":
-						self.user = self.email
-					self.update = "all"
-					self.action = "update"
-					
-				elif k in crawl_values:
-					self.update = "crawl"
-					self.action = "update"
-					self.update_date = datetime.today()
-					
-				elif k in crawl_options:
-					self.scope_action = k
-					self.update_date = datetime.today()
-				else:				
-					continue
-			elif v is not None:
-				if k in ["monthly", "weekly", "daily"]:
-					self.freq = k
-				elif k not in ["db", "collection", "task_db", "database"]:
-					#equivalent to elif k in ["query", "file", "key", "url"]
-					setattr(self,k,v)
-				else: continue
-			else:
-				continue
-		return self
 
 	def create_from_database(self):
 		'''doc.action = crawl ==> CrawlJob(doc)'''

@@ -22,7 +22,7 @@ class Scheduler(object):
 		job = Job(user_input)
 		job.create_from_ui()
 		
-		print job.action
+		
 		#create_or_show
 		if job.action is None:
 			has_job = self.get_one({"name": job.name})
