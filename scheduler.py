@@ -21,7 +21,7 @@ class Scheduler(object):
 	def schedule(self, user_input):
 		job = Job(user_input)
 		job.create_from_ui()
-		print job.action
+		
 		#create_or_show
 		if job.name is not None and job.action is None:
 			has_job = self.get_one({"name": job.name})
@@ -41,8 +41,7 @@ class Scheduler(object):
 				print "updating EVERY job with given params"
 				#set ownership
 				if job.u is True:
-					ex_jobs = self.get_list({"user": job.email, "name": job.name})
-					job.user = job.email
+					ex_jobs = self.get_list({"user": job.user, "name": job.name})
 					if ex_jobs is None:
 						ex_jobs = self.get_list({"name": job.name})
 						for doc in ex_jobs:
@@ -86,8 +85,8 @@ class Scheduler(object):
 			if has_user is None:
 				print "No project found with user %s" %job.user
 			else:
-				print job.user 
-				self.show_project()
+				print "***Project owned by user: %s***" %job.user
+				self.show({"user": job.user})
 						
 	def create(self, project_dict):				
 		project_dict["action"] = "crawl"

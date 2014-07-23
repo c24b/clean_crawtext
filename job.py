@@ -45,8 +45,6 @@ class Job(object):
 		'''defaut values from user input'''
 		for k, v in self.__dict__.items():
 			if v is True:
-				self.update = None
-				self.action = None
 				if k in ["report", "extract", "export", "archive"]:
 					self.update = None
 					self.action = k
@@ -72,8 +70,10 @@ class Job(object):
 					self.action = "update"
 				elif k not in ["db", "collection", "task_db", "database"]:
 					setattr(self,k,v)
-				else: pass
+				else: continue
 			else:
+				self.update = None
+				self.action = None
 				continue
 		return self
 
