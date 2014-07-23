@@ -68,9 +68,14 @@ class Job(object):
 		options_crawl =  [(k,v) for k,v in self.__dict__.items() if v is True and v is not None and k in crawl_option]
 		
 		for k,v in self.__dict__.items():
-			if k not in data:
+			if v is False:
 				del self.__dict__[k]
-		
+			elif v is None:
+				del self.__dict__[k]
+			elif k not in data:
+				del self.__dict__[k]
+			else:
+				pass
 				
 		if len(job_action) != 0:
 			self.action = job_action[0]

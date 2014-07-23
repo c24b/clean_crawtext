@@ -35,7 +35,7 @@ class Scheduler(object):
 		#run job
 		elif job.action is not None:
 			print "Scheduling job : %s" %job.action
-			#print job.__dict__
+			print job.__dict__
 			#job.create_from_database()
 			#job.run()
 		elif job.update is not None:
