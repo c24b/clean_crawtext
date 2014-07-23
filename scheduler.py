@@ -48,6 +48,7 @@ class Scheduler(object):
 						ex_jobs = self.get_list({"name": job.name})
 						for doc in ex_jobs:
 							self.collection.update({"_id": doc['_id']}, {"$set":{"user": job.user}})
+							self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
 						print "All jobs of project %s are sucessfully owned by %s"%(job.name, job.user)
 					else:
 						#Raise pymongo.errors.OperationFailure: database error: Unsupported projection option: $exists
@@ -55,25 +56,26 @@ class Scheduler(object):
 						ex_jobs = self.collection.find({"name": job.name})
 						for doc in ex_jobs:
 							self.collection.update({"_id": doc['_id']}, {"$set":{"user": job.user}})
+							self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})
 						print "Every job of the project '%s' are now belonging to %s."%(job.name, job.user)
 					
 					print self.show({"user":job.user})
-					
+					return 
 				#set frequency
 				else:
 					ex_jobs = self.collection.find({"name": job.name})
 					for doc in ex_jobs:
 						self.collection.update({"_id": doc['_id']}, {"$set":{"repeat":job.value}})
+						self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
 					print "Every job of the project '%s' will be run %s."%(job.name, job.value)
-					
-					
+					return 
 			elif job.update == "crawl":
-				print "Updating crawl project"
+				
 				has_job = self.get_one({"name": job.name, "action": "crawl"})
 				if has_job is None:
 					self.create(job.__dict__)
 				else:
-					print "updating parameters"
+					
 					if job.scope == "q":
 						print "update crawl_job query"
 						self.collection.update({"_id": has_job['_id']}, {"$set":{"query": job.query}})
@@ -94,15 +96,27 @@ class Scheduler(object):
 						#job.scope == "s"
 						print "update crawl_job sources"
 						if job.option == "set":
-							self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file}})
+							self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file}, "$set":{"option":[]}})
 						elif job.option == "append":
+							print "sources.db add file urls to sources"
+							#self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file},"$push":{"option": job.option}})
 						elif job.option == "extend":
+							print "sources.db add results to sources"
 							#make results automatically being inserted in sources at the beginning
-							self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file},"$push":{"option": job.option}})
-						#udpate crawl_job sources
+							#self.collection.update({"_id": has_job['_id']},"$push":{"option": job.option}})
+						elif job.option == "append" and job.url is not None:
+							print "sources.db add url"
+							
+						else:
+							#job.option == delete
+							if job.url is not None:
+								print "sources.db delete url	"
+							else:
+								print "sources.db drop	"
+				return self.collection.update({"_id": has_job['_id']}, {"date":{"$push": datetime.today}})
 			else:
 				#no update
-				pass
+				return
 		elif job.user is not None:
 			has_user = self.get_one({"user": job.user})
 			if has_user is None:
@@ -110,6 +124,7 @@ class Scheduler(object):
 			else:
 				print "***Project owned by user: %s***" %job.user
 				self.show({"user": job.user})
+			return
 						
 	def create(self, project_dict):				
 		project_dict["action"] = "crawl"
