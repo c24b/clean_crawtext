@@ -18,13 +18,27 @@ class Job(object):
 			k = re.sub("<|>|-|--", "", k)
 			if k not in ["task_db", "coll", "job", "collection"]:
 				setattr(self,k,v)
-		self.check_name_or_user()	
+		self.check_name_or_user_or_website()	
 		
-	def check_name_or_user(self):
+	def check_name_or_user_or_website(self):
 		if self.name is not None and self.user is None:
 			if validate_email(self.name) is True:
+			#means show all project belonging to the given user
 				self.user = self.name
 				self.name = None
+		elif self.name is not None and self.user is not None:
+			#means setting up ownership
+			self.user = self.name
+			self.name = self.user
+			self.action = "update"
+			self.update = "all"
+		else:
+			if self.archive is True and self.name is None:
+				self.name = self.url
+				self.action = "archive"
+				self.update = None
+			else:
+				pass	
 		return self
 				
 	def create_from_ui(self):
@@ -240,9 +254,6 @@ class CrawlJob(Job):
 		return self
 		
 	def activate(self):
-
-
-		self.ex
 		if self.query is None:
 			print "No query search has been configured for crawl project\nPlease provide a query expression:\tcrawtext.py %s -q \"your_query_expression\""	
 			return False
