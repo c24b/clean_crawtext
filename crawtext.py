@@ -15,10 +15,11 @@ Usage:
 	crawtext.py start <name>
 	crawtext.py <name> -u <email>
 	crawtext.py <name> -q <query>
-	crawtext.py <name> -s set <url>
-	crawtext.py <name> -s append <file>
 	crawtext.py <name> -k set <key>
 	crawtext.py <name> -k append [<key>]
+	crawtext.py <name> -s set <file>
+	crawtext.py <name> -s add <url>
+	crawtext.py <name> -s append <file>
 	crawtext.py <name> -s expand
 	crawtext.py <name> -s delete [<url>]
 	crawtext.py <name> -s delete					
@@ -40,6 +41,7 @@ Options:
 	Sources:
 	# pour définir les sources d'après un fichier :	crawtext.py pesticides -s set sources.txt	
 	# pour ajouter des sources d'après un fichier :	crawtext.py pesticides -s append sources.txt
+	# pour ajouter une nouvelle url : 				crawtext.py pesticides -s add www.latribune.fr
 	# pour définir les sources d'après Bing :		crawtext.py pesticides -k set 12237675647
 	# pour ajouter des sources d'après Bing :		crawtext.py pesticides -k append 12237675647
 	# pour ajouter des sources automatiquement :	crawtext.py pesticides -s expand
