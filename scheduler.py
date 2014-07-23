@@ -22,8 +22,9 @@ class Scheduler(object):
 		job = Job(user_input)
 		job.create_from_ui()
 		
+		print job.action
 		#create_or_show
-		if job.name is not None and job.action is None:
+		if job.action is None:
 			has_job = self.get_one({"name": job.name})
 			if has_job is None:
 				job.action = "crawl"
@@ -32,11 +33,12 @@ class Scheduler(object):
 				#print has_job
 				self.show(job.name)
 		#run job
-		elif job.name is not None and job.update is None:
+		elif job.action is not None:
 			print "Scheduling job : %s" %job.action
+			#print job.__dict__
 			#job.create_from_database()
 			#job.run()
-		elif job.name is not None and job.update is not None:
+		elif job.update is not None:
 			if job.update == "all":
 				print "updating EVERY job with given params"
 				#set ownership
@@ -80,7 +82,7 @@ class Scheduler(object):
 			else:
 				#no update
 				pass
-		elif job.user is not None and job.name is None:
+		elif job.user is not None:
 			has_user = self.get_one({"user": job.user})
 			if has_user is None:
 				print "No project found with user %s" %job.user

@@ -43,12 +43,15 @@ class Job(object):
 				
 	def create_from_ui(self):
 		'''defaut values from user input'''
+		action_list = ["report", "extract", "export", "archive"]
 		for k, v in self.__dict__.items():
+			
 			if v is True:
 				if k in ["report", "extract", "export", "archive"]:
 					self.update = None
 					self.action = k
 					self.start_date = datetime.today()
+					return self
 					
 				elif k == "u":
 					#print self.email
@@ -56,11 +59,14 @@ class Job(object):
 					self.update = "all"
 					self.action = "update"
 					self.user = self.email
+					return self
 				elif k in ["q", "s", "k"] and v is True:
 					self.update = "crawl"
 					self.action = "update"
+					self.update_date = datetime.today()
 				elif k in ['set', 'append', 'delete', 'expand']:
 					self.scope_action = k
+					self.update_date = datetime.today()
 				else:				
 					continue
 			elif v is not None:
@@ -68,12 +74,11 @@ class Job(object):
 					self.freq = k
 					self.update = "all"
 					self.action = "update"
+					return self
 				elif k not in ["db", "collection", "task_db", "database"]:
 					setattr(self,k,v)
 				else: continue
 			else:
-				self.update = None
-				self.action = None
 				continue
 		return self
 
