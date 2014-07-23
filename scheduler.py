@@ -82,17 +82,23 @@ class Scheduler(object):
 						print "update crawl_job Key"
 						if job.option == "set":
 							self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key}})
+							#self.collection.update({"_id": has_job['_id']}, {"$set":{"option": []}})
 						#update crawl_job Key
-						elif job.option == "append":
+						else:
+						# job.option == "append":
 							#make first search and push it to sources
 							#self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key}})
-							self.collection.update({"_id": has_job['_id']}, {"$push":{"option": job.option}})
+							self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key},"$push":{"option": job.option}})
+						
+					else:
+						#job.scope == "s"
+						print "update crawl_job sources"
+						if job.option == "set":
+							self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file}})
+						elif job.option == "append":
 						elif job.option == "extend":
 							#make results automatically being inserted in sources at the beginning
-							self.collection.update({"_id": has_job['_id']}, {"$push":{"option": job.option}})
-					else:
-						print "update crawl_job sources"
-						
+							self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file},"$push":{"option": job.option}})
 						#udpate crawl_job sources
 			else:
 				#no update

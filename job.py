@@ -56,7 +56,7 @@ class Job(object):
 		
 		#update crawl
 		scope = ["q", "s", "k"]
-		option = ['set', 'append', 'delete', 'expand']
+		option = ['add', 'set', 'append', 'delete', 'expand']
 		scope_crawl = [k for k,v in self.__dict__.items() if v is True and k in scope]
 		option_crawl = [k for k,v in self.__dict__.items() if v is True and k in option]
 		
@@ -73,7 +73,8 @@ class Job(object):
 				del self.__dict__[k]
 			else:
 				pass
-				
+			
+					
 		if len(job_action) != 0:
 			self.action = job_action[0]
 			self.update = None
