@@ -48,18 +48,21 @@ class Job(object):
 		action_list = ["report", "extract", "export", "archive"]
 		job_action = [k for k, v in self.__dict__.items() if v is True and k in action_list]
 		
-		#udpate all
-		update_list = ["u", "r"]
-		update_project = [k for k,v in self.__dict__.items() if v is True and k in update_list] 
+		#update all
+		scope = ["u", "r"]
+		option = ['email', 'daily', 'weekly','monthly']
+		scope_all = [k for k,v in self.__dict__.items() if v is True and k in scope] 
+		option_all =  [k for k,v in self.__dict__.items() if v is not None and k in option]
 		
-		# crawl
-		crawl_values = ["q", "s", "k"]
-		crawl_option = ['set', 'append', 'delete', 'expand']
-		update_crawl = [k for k,v in self.__dict__.items() if v is True and k in crawl_values]
-		options_crawl =  [k for k,v in self.__dict__.items() if v is True and k in crawl_option]
+		#update crawl
+		scope = ["q", "s", "k"]
+		option = ['set', 'append', 'delete', 'expand']
+		scope_crawl = [k for k,v in self.__dict__.items() if v is True and k in scope]
+		option_crawl =  [k for k,v in self.__dict__.items() if v is True and k in option]
 		
-		#user input values to insert
-		data = ['name', 'url', 'file', 'query', 'key','email', 'daily', 'weekly','monthly', 'user']
+		
+		#values to insert from user_input
+		data = ['name', 'url', 'file', 'query', 'key','email', 'user']
 		for k,v in self.__dict__.items():
 			if v is False:
 				del self.__dict__[k]
@@ -76,21 +79,23 @@ class Job(object):
 			self.start_date = datetime.now()
 			self.start_date = datetime.today()
 			return self
-		elif len(update_project) != 0:
+		
+		elif len(scope_all) != 0:
+			self.update = 'all'
 			self.action = None
-			self.update = update_project[0]
-			self.values = update_crawl[0]
+			self.scope = scope_all[0]
+			self.value = option_all[0]
+			self.date = datetime.now()
 			return self
 			
 		elif len(update_crawl) != 0:
-			self.action = None
 			self.update = 'crawl'
-			self.value = update_crawl[0]
-			try:
-				self.option = options_crawl[0]
-			except IndexError:
-				self.option = None
-			return self
+			self.action = None
+			self.scope = option_crawl[0]
+			self.value = option_crawl[0]
+			self.date = datetime.now()
+			self.option = options_crawl[0]
+			
 		else:
 			self.action = None
 			self.update = None

@@ -34,16 +34,15 @@ class Scheduler(object):
 				self.show(job.name)
 		#run job
 		elif job.action is not None:
-			print "Scheduling job : %s" %job.action
-			print job.__dict__
-			#job.create_from_database()
-			#job.run()
+			self.collection.insert(job.__dict__)
+			print "Sucessfully scheduled %s on project" %(job.action, job.name) 
+			
 		elif job.update is not None:
-			print job.update
 			if job.update == "all":
 				print "updating EVERY job with given params"
 				#set ownership
-				if job.u is True:
+				
+				if job.scope == "u":
 					ex_jobs = self.get_list({"user": job.user, "name": job.name})
 					if ex_jobs is None:
 						ex_jobs = self.get_list({"name": job.name})
@@ -56,14 +55,18 @@ class Scheduler(object):
 						ex_jobs = self.collection.find({"name": job.name})
 						for doc in ex_jobs:
 							self.collection.update({"_id": doc['_id']}, {"$set":{"user": job.user}})
-						print "Sucessfull updated every job of project %s to be owned by %s. Erase other users"%(job.name, job.user)
-					print "Job owned by %s" %(job.user)
-					print self.show({"name":job.name})
+						print "Every job of the project '%s' are now belonging to %s."%(job.name, job.user)
+					
+					print self.show({"user":job.user})
 					
 				#set frequency
 				else:
-					print job.freq
-					#update project_name frequency
+					ex_jobs = self.collection.find({"name": job.name})
+					for doc in ex_jobs:
+						self.collection.update({"_id": doc['_id']}, {"$set":{"repeat":job.value}})
+					print "Every job of the project '%s' will be run %s."%(job.name, job.value)
+					
+					
 			elif job.update == "crawl":
 				print "Updating crawl project"
 				has_job = self.get_one({"name": job.name, "action": "crawl"})
