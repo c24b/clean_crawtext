@@ -20,114 +20,115 @@ class Scheduler(object):
 			
 	def schedule(self, user_input):
 		job = Job(user_input)
-		job.create_from_ui()
+		
 		
 		
 		#create_or_show
-		if job.action is None and job.update is None:
-			has_job = self.get_one({"name": job.name})
-			if has_job is None:
-				job.action = "crawl"
-				self.create(job.__dict__)
+		if job.name is not None:
+			job.create_from_ui()
+			if job.action is None and job.update is None:
+				has_job = self.get_one({"name": job.name})
+				if has_job is None:
+					job.action = "crawl"
+					
+					self.create(job.__dict__)
+				else:
+					#print has_job
+					self.show({"name":job.name, action})
+			#run job
+			elif job.action is not None:
+				self.collection.insert(job.__dict__)
+				print "Sucessfully scheduled %s on project '%s'" %(job.action, job.name) 
+			
+			
 			else:
-				#print has_job
-				self.show(job.name)
-		#run job
-		elif job.action is not None:
-			self.collection.insert(job.__dict__)
-			print "Sucessfully scheduled %s on project '%s'" %(job.action, job.name) 
-		
-		#update job	
-		elif job.update is not None:
-			if job.update == "all":
-				print "updating EVERY job with given params"
-				#set ownership
-				
-				if job.scope == "u":
-					ex_jobs = self.get_list({"user": job.user, "name": job.name})
-					if ex_jobs is None:
-						ex_jobs = self.get_list({"name": job.name})
-						for doc in ex_jobs:
-							self.collection.update({"_id": doc['_id']}, {"$set":{"user": job.user}})
-							#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
-						print "All jobs of project %s are sucessfully owned by %s"%(job.name, job.user)
+			#elif job.update is not None:
+				if job.update == "all":
+					#set ownership
+					
+					if job.scope == "u":
+						ex_jobs = self.get_list({"user": job.user, "name": job.name})
+						if ex_jobs is None:
+							ex_jobs = self.get_list({"name": job.name})
+							for doc in ex_jobs:
+								self.collection.update({"_id": doc['_id']}, {"$set":{"user": job.user}})
+								#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
+							print "All jobs of project %s are sucessfully owned by %s"%(job.name, job.user)
+						else:
+							#Raise pymongo.errors.OperationFailure: database error: Unsupported projection option: $exists
+							#ex_jobs = self.collection.find({"name": job.name}, {"user":{"$exists": False}})
+							ex_jobs = self.collection.find({"name": job.name})
+							for doc in ex_jobs:
+								self.collection.update({"_id": doc['_id']}, {"$set":{"user": job.user}})
+								#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})
+							print "Every job of the project '%s' are now belonging to %s."%(job.name, job.user)
+						
+						print self.show({"user":job.user, name})
+						return 
+					#set frequency
 					else:
-						#Raise pymongo.errors.OperationFailure: database error: Unsupported projection option: $exists
-						#ex_jobs = self.collection.find({"name": job.name}, {"user":{"$exists": False}})
 						ex_jobs = self.collection.find({"name": job.name})
 						for doc in ex_jobs:
-							self.collection.update({"_id": doc['_id']}, {"$set":{"user": job.user}})
-							#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})
-						print "Every job of the project '%s' are now belonging to %s."%(job.name, job.user)
-					
-					print self.show({"user":job.user})
-					return 
-				#set frequency
+							self.collection.update({"_id": doc['_id']}, {"$set":{"repeat":job.value}})
+							#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
+						print "Every job of the project '%s' will be run %s."%(job.name, job.value)
+						return 
 				else:
-					ex_jobs = self.collection.find({"name": job.name})
-					for doc in ex_jobs:
-						self.collection.update({"_id": doc['_id']}, {"$set":{"repeat":job.value}})
-						#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
-					print "Every job of the project '%s' will be run %s."%(job.name, job.value)
-					return 
-			elif job.update == "crawl":
-				
-				has_job = self.get_one({"name": job.name, "action": "crawl"})
-				if has_job is None:
-					return self.create(job.__dict__)
-				else:
-					
-					if job.scope == "q":
-						print "update crawl_job query"
-						self.collection.update({"_id": has_job['_id']}, {"$set":{"query": job.query}})
-						#update crawl_job query
-					elif job.scope == "k":
-						print "update crawl_job Key"
-						if job.option == "set":
-							self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key}})
-							#self.collection.update({"_id": has_job['_id']}, {"$set":{"option": []}})
-						#update crawl_job Key
-						else:
-						# job.option == "append":
-							#make first search and push it to sources
-							#self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key}})
-							self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key},"$push":{"option": job.option}})
-						
+				#elif job.update == "crawl":
+					has_job = self.get_one({"name": job.name, "action": "crawl"})
+					if has_job is None:
+						return self.create(job.__dict__)
 					else:
-						#job.scope == "s"
-						print "update crawl_job sources"
-						if job.option == "set":
-							self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file}, "$set":{"option":[]}})
-						elif job.option == "append":
-							print "sources.db add file urls to sources"
-							#self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file},"$push":{"option": job.option}})
-						elif job.option == "extend":
-							print "sources.db add results to sources"
-							#make results automatically being inserted in sources at the beginning
-							#self.collection.update({"_id": has_job['_id']},"$push":{"option": job.option}})
-						elif job.option == "append" and job.url is not None:
-							print "sources.db add url"
+						
+						if job.scope == "q":
+							print "update crawl_job query"
+							self.collection.update({"_id": has_job['_id']}, {"$set":{"query": job.query}})
+							#update crawl_job query
+						elif job.scope == "k":
+							print "update crawl_job Key"
+							if job.option == "set":
+								self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key}})
+								#self.collection.update({"_id": has_job['_id']}, {"$set":{"option": []}})
+							#update crawl_job Key
+							else:
+							# job.option == "append":
+								#make first search and push it to sources
+								#self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key}})
+								self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key},"$push":{"option": job.option}})
 							
 						else:
-							#job.option == delete
-							if job.url is not None:
-								print "sources.db delete url	"
+							#job.scope == "s"
+							print "update crawl_job sources"
+							if job.option == "set":
+								self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file}, "$set":{"option":[]}})
+							elif job.option == "append":
+								print "sources.db add file urls to sources"
+								#self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file},"$push":{"option": job.option}})
+							elif job.option == "extend":
+								print "sources.db add results to sources"
+								#make results automatically being inserted in sources at the beginning
+								#self.collection.update({"_id": has_job['_id']},"$push":{"option": job.option}})
+							elif job.option == "append" and job.url is not None:
+								print "sources.db add url"
+								
 							else:
-								print "sources.db drop	"
-					return self.collection.update({"_id": has_job['_id']}, {"date":{"$push": datetime.today}})
-			else:
-				#no update
-				return
+								#job.option == delete
+								if job.url is not None:
+									print "sources.db delete url	"
+								else:
+									print "sources.db drop	"
+						return self.collection.update({"_id": has_job['_id']}, {"date":{"$push": datetime.today}})
+				
+		else:
 		#show user
-		elif job.user is not None:
+		#elif job.user is not None:
 			has_user = self.get_one({"user": job.user})
 			if has_user is None:
 				print "No project found with user %s" %job.user
-				return 
+				
 			else:
-				print "***Project owned by user: %s***" %job.user
-				return self.show({"user": job.user})
-			
+				print self.show({"user": job.user})
+			return 	
 						
 	def create(self, project_dict):				
 		project_dict["action"] = "crawl"
@@ -171,13 +172,15 @@ class Scheduler(object):
 			return None
 		elif type(project_name) == dict:
 			return self.collection.find_one(project_name)
-		elif type(project_name) == str:
+		else:
+		#elif type(project_name) == str:
 			if validate_email(project_name) is True:
 				return self.collection.find_one({"email":project_name})
+			elif validate_url(project_name) is True:
+				return self.collection.find_one({"name":project_name, "action": "archive"})
 			else:	
 				return self.collection.find_one({"name":project_name})
-		else:
-			return None
+		
 	
 	def get_list(self, project_name=None):
 		'''get all the current job'''		
@@ -205,7 +208,7 @@ class Scheduler(object):
 		else:
 			project_list = self.get_list(values)
 		if project_list is not None:
-			print "******\tProject : %s    ******" %(values.keys()[0])
+			print "******\tProject : %s    ******" %(values.values()[0])
 			for job in project_list:
 				for k,v in job.items():
 					if v is not False or v is not None:
