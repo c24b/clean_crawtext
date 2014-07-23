@@ -74,16 +74,25 @@ class Scheduler(object):
 					self.create(job.__dict__)
 				else:
 					print "updating parameters"
-					if job.value == "q":
+					if job.scope == "q":
 						print "update crawl_job query"
-						print job.query
+						self.collection.update({"_id": has_job['_id']}, {"$set":{"query": job.query}})
 						#update crawl_job query
-					elif job.value == "k":
+					elif job.scope == "k":
 						print "update crawl_job Key"
-						print job.key
+						if job.option == "set":
+							self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key}})
 						#update crawl_job Key
+						elif job.option == "append":
+							#make first search and push it to sources
+							#self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key}})
+							self.collection.update({"_id": has_job['_id']}, {"$push":{"option": job.option}})
+						elif job.option == "extend":
+							#make results automatically being inserted in sources at the beginning
+							self.collection.update({"_id": has_job['_id']}, {"$push":{"option": job.option}})
 					else:
 						print "update crawl_job sources"
+						
 						#udpate crawl_job sources
 			else:
 				#no update

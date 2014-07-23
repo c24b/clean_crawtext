@@ -50,19 +50,20 @@ class Job(object):
 		
 		#update all
 		scope = ["u", "r"]
-		option = ['email', 'daily', 'weekly','monthly']
+		value = ['email', 'daily', 'weekly','monthly']
 		scope_all = [k for k,v in self.__dict__.items() if v is True and k in scope] 
-		option_all =  [k for k,v in self.__dict__.items() if v is not None and k in option]
+		value_all =  [k for k,v in self.__dict__.items() if v is not None and k in value]
 		
 		#update crawl
 		scope = ["q", "s", "k"]
 		option = ['set', 'append', 'delete', 'expand']
 		scope_crawl = [k for k,v in self.__dict__.items() if v is True and k in scope]
-		option_crawl =  [k for k,v in self.__dict__.items() if v is True and k in option]
+		option_crawl = [k for k,v in self.__dict__.items() if v is True and k in option]
 		
 		
 		#values to insert from user_input
 		data = ['name', 'url', 'file', 'query', 'key','email', 'user']
+		
 		for k,v in self.__dict__.items():
 			if v is False:
 				del self.__dict__[k]
@@ -84,18 +85,18 @@ class Job(object):
 			self.update = 'all'
 			self.action = None
 			self.scope = scope_all[0]
-			self.value = option_all[0]
+			self.value = value_all[0]
 			self.date = datetime.now()
 			return self
 			
 		elif len(scope_crawl) != 0:
 			self.update = 'crawl'
 			self.action = None
-			self.scope = option_crawl[0]
-			self.value = option_crawl[0]
+			self.scope = scope_crawl[0]
+			self.option = option_crawl[0]
 			self.date = datetime.now()
-			self.option = options_crawl[0]
 			
+			 
 		else:
 			self.action = None
 			self.update = None
