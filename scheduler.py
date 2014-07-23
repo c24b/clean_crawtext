@@ -90,16 +90,14 @@ class Scheduler(object):
 				#make first search and push it to sources
 				#self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key}})
 				return self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key},"$push":{"option": job.option}})			
-		else:
-			#job.scope == "s"
+		else:#job.scope == "s"
 			return self.udpate_sources(job)
 					
 	def update_job(job):
 		if job.update == "all":
 			return self.update_all(job)
 					
-		else:
-		#elif job.update == "crawl":
+		else:#job.update == "crawl":
 			has_job = self.get_one({"name": job.name, "action": "crawl"})
 			if has_job is None:
 				return self.create(job.__dict__)
@@ -199,17 +197,15 @@ class Scheduler(object):
 			return None
 	
 	def show(self, values, by=None):
-		if by is not None:
-			project_list = self.get_list(values).sort(by, 1)
-		else:
-			project_list = self.get_list(values)
+		project_list = self.get_list(values)
 		if project_list is not None:
-			print "******\tProject : %s    ******" %(values.values()[0])
+			print "******\t%s : %s    ******" %(by, values.values()[0])
 			for job in project_list:
+				print "*******"
 				for k,v in job.items():
 					if v is not False or v is not None:
 						print k, v
-				print "*******"
+				
 				
 			return "*******************************************" 			
 		
