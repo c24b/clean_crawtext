@@ -88,7 +88,7 @@ class Job(object):
 			self.date = datetime.now()
 			return self
 			
-		elif len(update_crawl) != 0:
+		elif len(scope_crawl) != 0:
 			self.update = 'crawl'
 			self.action = None
 			self.scope = option_crawl[0]

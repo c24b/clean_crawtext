@@ -35,7 +35,7 @@ class Scheduler(object):
 		#run job
 		elif job.action is not None:
 			self.collection.insert(job.__dict__)
-			print "Sucessfully scheduled %s on project" %(job.action, job.name) 
+			print "Sucessfully scheduled %s on project '%s'" %(job.action, job.name) 
 			
 		elif job.update is not None:
 			if job.update == "all":
