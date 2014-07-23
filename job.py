@@ -44,27 +44,36 @@ class Job(object):
 	def create_from_ui(self):
 		'''defaut values from user input'''
 		action_list = ["report", "extract", "export", "archive"]
+		update_list = ["u", "r"]
+		crawl_values = ["q", "s", "k"]
+		crawl_option = ['set', 'append', 'delete', 'expand']
+		
 		for k, v in self.__dict__.items():
+			if v is False or v is None:
+				print k, "is empty"
+				del self.__dict__[k]
 			
-			if v is True:
-				if k in ["report", "extract", "export", "archive"]:
+		
+		
+		for k, v in self.__dict__.items():
+			if k is True:
+				if k in action_list:
 					self.update = None
 					self.action = k
 					self.start_date = datetime.today()
 					return self
-					
-				elif k == "u":
-					#print self.email
-					#option for the all bunch of project
+				if k in update_list:		
+					if k == "u":
+						self.user = self.email
 					self.update = "all"
 					self.action = "update"
-					self.user = self.email
-					return self
-				elif k in ["q", "s", "k"] and v is True:
+					
+				elif k in crawl_values:
 					self.update = "crawl"
 					self.action = "update"
 					self.update_date = datetime.today()
-				elif k in ['set', 'append', 'delete', 'expand']:
+					
+				elif k in crawl_options:
 					self.scope_action = k
 					self.update_date = datetime.today()
 				else:				
@@ -72,10 +81,8 @@ class Job(object):
 			elif v is not None:
 				if k in ["monthly", "weekly", "daily"]:
 					self.freq = k
-					self.update = "all"
-					self.action = "update"
-					return self
 				elif k not in ["db", "collection", "task_db", "database"]:
+					#equivalent to elif k in ["query", "file", "key", "url"]
 					setattr(self,k,v)
 				else: continue
 			else:
