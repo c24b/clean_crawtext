@@ -9,142 +9,20 @@ from database import *
 import requests
 from page import Page
 import sys
-
-class Job(object):
-	#__metaclass__ = ABCMeta
-	def __init__(self):
-		pass
-	
-			
-	'''
-	def create_from_ui(self):
-	'''	
-		#'''defaut values from user input'''
-	
-		#main action
 		
-		
-		#update all
-		
-		
-		#update crawl
-	'''
-		scope_crawl = ["q", "s", "k"]
-		crawl_scope = [k for k in self.__dict__.keys() if k in scope_crawl]
-		c_option = ['add', 'set', 'append', 'delete', 'expand']
-		option = [k for k in self.__dict__.keys() if k in c_option]
-		
-		
-		#values to insert from user_input
-		data = ['name', 'url', 'file', 'query', 'key','email', 'user']
-		#user_input_values = action_list+scope_all+scope_crawl+data
-		#~ for k,v in self.__dict__.items():
-			#~ if k not in data:
-				#~ del self.__dict__[k]
-			
-			
-					
-		if len(job_action) != 0:
-			
-			self.start_date = datetime.today()
-			return self
-		
-		elif len(scope_all) != 0:
-			self.update = 'all'
-			self.action = None
-			self.scope = scope_all[0]
-			self.value = value_all[0]
-			self.date = datetime.now()
-			return self
-			
-		elif len(scope_crawl) != 0:
-			self.update = 'crawl'
-			self.action = None
-			self.scope = scope_crawl[0]
-			self.option = option_crawl[0]
-			self.date = datetime.now()
-			
-			 
-		else:
-			self.action = None
-			self.update = None
-			return self
-	'''	
-		
-
-	def create_from_database(self):
-		'''doc.action = crawl ==> CrawlJob(doc)'''
-		try:
-			return globals()[(self.action).capitalize()+"Job"](self.__dict__) 
-		except KeyError:
-			print self.action, "has not been implemented Yet"			
-			#raise NotImplementedError
-			return NotImplementedError
-					
-class CreateJob(Job):
-	def __init__(self, doc): 
-		self.start_date = datetime.now()
-		
-		for k, v in doc.items():
-			if v is not None or False:
-				setattr(self,k,v)
-		self.action = "crawl"
-		self.status = "inactive"
-		self.active = False
-		
-	def run(self):
-		new = yes_no("Do you want to create a new CRAWL project?")
-		if new == 1:		
-			task_db = Database(TASK_MANAGER_NAME)
-			coll = task_db.create_coll(TASK_COLL)
-			coll.insert(self.__dict__)
-			print "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(self.name,self.name)
-			return True
-			
-class UpdateJob(Job):
-	def __init__(self, doc): 
-		self.date = datetime.now()
-		for k, v in doc.items():
-			setattr(self,k,v) 	
-	
-	def run(self):
-		print self.scope
-		pass	
-		
-class CrawlJob(Job):
-	def __init__(self, doc): 
+class CrawlJob(object):
+	def __init__(self, job): 
 		self.date = datetime.now()
 		#required properties
-		self.query = None
-		self.key = None
-		self.file = None
-		self.expand = None
-		for k, v in doc.items():
-			setattr(self,k,v) 	
 		self.db = Database(self.name)
-		self.sources = self.db.create_coll('sources')
-		self.results = self.db.create_coll('results')
-		self.logs = self.db.create_coll('logs')
-		self.queue = self.db.create_coll('queue')
-		self.filename = None
-		for k, v in doc.items():
-			setattr(self,k,v) 	
-		self.db = Database(self.name)
-		self.db.create_colls()	
-		
-		#properties
-		#pour définir les sources d'après un fichier :	crawtext pesticides -s set sources.txt	
-	# pour ajouter des sources d'après un fichier :	crawtext pesticides -s append sources.txt
-	# pour définir les sources d'après Bing :		crawtext pesticides -k set 12237675647
-	# pour ajouter des sources d'après Bing :		crawtext pesticides -k append 12237675647
-	# pour ajouter des sources automatiquement :	crawtext pesticides -s expand
-	# pour supprimer une source :					crawtext pesticides -s delete www.latribune.fr
-	#pour ajouter une nouvelle sources				crawtext pesticides -s add www.latribune.fr
-	# pour supprimer toutes les sources :			crawtext pesticides -s delete
-	#Récurrence
-	# pour définir la récurrence :                	crawtext pesticides -r monthly|weekly|daily
-
-	def get_bing(self):
+		#~ self.sources = self.db.create_coll('sources')
+		#~ self.results = self.db.create_coll('results')
+		#~ self.logs = self.db.create_coll('logs')
+		#~ self.queue = self.db.create_coll('queue')
+		self.db.create_colls(['sources', 'results', 'logs', 'queue')	
+	
+	@staticmethod	
+	def get_bing(job['key']):
 		''' Method to extract results from BING API (Limited to 5000 req/month). ''' 
 		try:
 			r = requests.get(
