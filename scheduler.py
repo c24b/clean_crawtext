@@ -110,7 +110,7 @@ class Scheduler(object):
 	def schedule(self, user_input):
 		job = Job(user_input)
 		job = job.create_from_ui()
-		print job
+		print job.__dict__
 		#~ if job.name is not None:
 			#~ print job.name, job.action,  job.udpate
 			#~ if job.delete is True:
@@ -130,15 +130,15 @@ class Scheduler(object):
 			#else: #elif job.update is not None:
 			#	self.udpate(job)
 		#show user		
-		else:
+		#else:
 		#elif job.user is not None:
-			has_user = self.get_one({"user": job.user})
-			if has_user is None:
-				print "No project found with user %s" %job.user
+		#	has_user = self.get_one({"user": job.user})
+		#	if has_user is None:
+		#		print "No project found with user %s" %job.user
 				
-			else:
-				print self.show({"user": job.user})
-			return 	
+		#	else:
+		#		print self.show({"user": job.user})
+		#	return 	
 						
 	def create(self, project_dict):				
 		project_dict["action"] = "crawl"

@@ -43,36 +43,32 @@ class Job(object):
 				
 	def create_from_ui(self):
 		'''defaut values from user input'''
-		#user_input_values = action_list+scope_all+scope
+		
 		#main action
 		action_list = ["report", "extract", "export", "archive"]
-		job_action = [k for k, v in self.__dict__.items() if v is True and k in action_list]
+		job_action = [k for k in self.__dict__.keys() if  k in action_list]
 		
 		#update all
 		scope_all = ["u", "r"]
-		value = ['email', 'daily', 'weekly','monthly']
-		scope_all = [k for k,v in self.__dict__.items() if v is True and k in scope_crawl] 
-		value_all =  [k for k,v in self.__dict__.items() if v is not None and k in value]
+		
+		a_scope = [k for k in self.__dict__.keys() if k in scope_all] 
+		value = ['daily', 'weekly','monthly']
+		value_all =  [k for k in self.__dict__.keys() if k in value]
 		
 		#update crawl
 		scope_crawl = ["q", "s", "k"]
-		option = ['add', 'set', 'append', 'delete', 'expand']
-		scope_crawl = [k for k,v in self.__dict__.items() if v is True and k in scope_all]
-		option_crawl = [k for k,v in self.__dict__.items() if v is True and k in option]
+		crawl_scope = [k for k in self.__dict__.keys() if k in scope_crawl]
+		c_option = ['add', 'set', 'append', 'delete', 'expand']
+		option = [k for k in self.__dict__.keys() if k in c_option]
 		
 		
 		#values to insert from user_input
 		data = ['name', 'url', 'file', 'query', 'key','email', 'user']
-		
-		for k,v in self.__dict__.items():
-			if v is False:
-				del self.__dict__[k]
-			elif v is None:
-				del self.__dict__[k]
-			elif k not in data:
-				del self.__dict__[k]
-			else:
-				pass
+		#user_input_values = action_list+scope_all+scope_crawl+data
+		#~ for k,v in self.__dict__.items():
+			#~ if k not in data:
+				#~ del self.__dict__[k]
+			
 			
 					
 		if len(job_action) != 0:
