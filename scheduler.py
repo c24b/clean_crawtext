@@ -42,14 +42,19 @@ class Scheduler(object):
 		data_list = ['<url>', '<file>', '<query>', '<key>','<email>']
 		for k,v in user_input.items():
 			if v is not None and k in data_list:
-				job[k] = v
+				job[re.sub("<|>", "",k)] = v
 		job['data'] = [[re.sub("<|>", "",k),v] for k,v in user_input.items() if v is not None and k in data_list]
 		#job['data_v = [v for k,v in user_input.items() if v is True and k in option_list]
 		return job
 		
 	def create_or_show(self, job):
 		'''show user or show project if project doesn't exists create a new one with defaut params'''
+		del job['scope']
+		del job['option']
+		del job['freq']
+		del job['data']
 		if job['user'] is not None and job['name'] is None:
+			del job['name']
 			has_user = self.get_one({"user": job['user']})
 			if has_user is None:
 				return "No user '%s' registered." %job['user']
@@ -57,45 +62,58 @@ class Scheduler(object):
 				#print has_user
 				return self.show({"user":job['user']}, "name")
 		else:
+			del job['user']
 			has_job = self.get_one({"name": job['name']})
 			if has_job is None:
 				job['action'] = "crawl"
 				self.collection.insert(job)
-				return "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(project_dict['name'],project_dict['name'])			
+				return "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'],job['name'])			
 			else:
 				#print has_job
 				return self.show({"name":job['name']}, "action")
 	
 	def update_all(self, job):
+		
+		ex_jobs = self.collection.find({"name": job['name']})
 		#update user ownernship
 		if job['scope'] == "u":
-			ex_jobs = self.get_list({"user": job['user'], "name": job['name']})
-			print ex_jobs
+			job['user'] = job['email']
+			del job['email']
+			del job['scope']
 			#if no project with user declared
 			if ex_jobs is None:
-				print "No project with user: %s found" %job['user']
-				#ex_jobs = self.get_list({"name": job['name']})
-				#for doc in ex_jobs:
-				#	self.collection.update({"_id": doc['_id']}, {"$set":{"user": job['user']}})
-					#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
-				return "All jobs of project %s are sucessfully owned by %s"%(job['name'], job['user'])
+				print "No project '%s' found.\n Creating a new project with defaut user '%s'" %(job['user'], job['email'])
+				#print self.get_list({"name": job['name']})
+				job['action'] = "crawl"
+				job['start_date'] = datetime.now()
+				print job
+				print self.collection.insert(job)
+				return "Project %s has been successfully created with user %s and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'],job['user'], job['name'])
+				
 			else:
 				#Raise pymongo.errors.OperationFailure: database error: Unsupported projection option: $exists
 				#ex_jobs = self.collection.find({"name": job.name}, {"user":{"$exists": False}})
-				ex_jobs = self.collection.find({"name": job['name']})
 				for doc in ex_jobs:
-					self.collection.update({"_id": doc['_id']}, {"$set":{"user": job['user']}})
+					print self.collection.update({"_id": doc['_id']}, {"$set":{"user": job['user']}})
 					#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})
 				return "Every job of the project '%s' are now belonging to %s."%(job['name'], job['user'])
 			
-			#return self.show({"user":job.user}, "name")
-		else:
-			ex_jobs = self.collection.find({"name": job.name})
-			for doc in ex_jobs:
-				self.collection.update({"_id": doc['_id']}, {"$set":{"repeat":job.value}})
-				#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
-			print "Every job of the project '%s' will be run %s."%(job.name, job.value)
-			return 	
+			
+		else:#job['scope'] == "r"
+			if ex_jobs is None:
+				print "No project '%s' found.\n Creating a new project that will be repeated '%s'" %(job['name'], job['freq'])
+				#print self.get_list({"name": job['name']})
+				del job['scope']
+				job['action'] = "crawl"
+				job['start_date'] = datetime.now()
+				self.collection.insert(job)
+				return "Project %s has been successfully created and scheduled %s!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'], job['freq'], job['name'])
+			else:	
+				for doc in ex_jobs:
+					self.collection.update({"_id": doc['_id']}, {"$set":{"repeat":job['freq']}})
+					#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
+				return "Every job of the project '%s' will be executed %s."%(job['name'], job['freq'])
+			
 	def update_sources(self, job):
 		print "update crawl_job sources"
 		if job.option == "set":
@@ -140,18 +158,26 @@ class Scheduler(object):
 					
 	def schedule(self, user_input):
 		job = self.create_from_ui(user_input)
+		
 		#schedule		
 		if len(job['action']) == 1:
 			job['action'], = job['action']
 			job['start_date'] = datetime.now()
-			self.collection.insert(job)
+			del job['scope']
+			del job['freq']
+			del job['data']
+			del job['option']
+			print "Job", job.items()
+			#self.collection.insert(job)
 			return "Sucessfully scheduled %s on %s" %(job['action'], job['name'])
 		#udpate
 		elif len(job['scope']) == 1:
 			job['scope'], = job['scope']
+			print job['scope']
 			#update every project
 			if job['scope'] in ['u', 'r']:
-				self.update_all(job)
+				return self.update_all(job)
+				 
 			#udpate crawl
 			else:
 				
@@ -160,15 +186,13 @@ class Scheduler(object):
 				has_job = self.get_one({"name": job['name'], "action": job['action']})
 				if has_job is None:
 					self.collection.insert(job)
-					return "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(project_dict['name'],project_dict['name'])
+					return "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'],job['name'])
 				else:
 					return self.update_crawl(job)
 		#create or show
 		else:
-			job['action'] = crawl
-			job['start_date'] = datetime.now()
-			self.create_or_show(job)
-			return "Sucessfully scheduled %s on %s" %(job['action'], job['name'])
+			return self.create_or_show(job)
+			
 
 	def delete(self, project_name):
 		'''Delete existing project'''
