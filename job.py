@@ -17,41 +17,42 @@ class Job(object):
 	
 	def create_from_ui(self, user_input):
 		'''user_input info to job properties'''
-		self.name = user_input['<name>']	
-		self.user = None
-		if validate_email(self.name) is True:
-			self.user = self.name
+		job = {}
+		job['name'] = user_input['<name>']	
+		job['user'] = None
+		if validate_email(job['name']) is True:
+			job['user'] = job['name']
 		
 		action_list = ["report", "extract", "export", "archive", "start", "delete"]
-		self.action = [k for k,v in user_input.items() if v is True and k in action_list]
+		job['action'] = [k for k,v in user_input.items() if v is True and k in action_list]
 		
 		scope_list = ["-u", "-r", "-q", "-k", "-s"]
-		self.scope = [re.sub("-", "",k) for k,v in user_input.items() if v is True and k in scope_list]
+		job['scope'] = [re.sub("-", "",k) for k,v in user_input.items() if v is True and k in scope_list]
 		
 		option_list = ['add', 'set', 'append', 'delete', 'expand']
-		self.option = [k for k,v in user_input.items() if v is True and k in option_list]
+		job['option'] = [k for k,v in user_input.items() if v is True and k in option_list]
 		
 		freq_list = ['<monthly>', '<weekly>', '<daily>']
-		self.freq = [re.sub("<|>", "",k) for k,v in user_input.items() if v is True and k in freq_list]
+		job['freq'] = [re.sub("<|>", "",k) for k,v in user_input.items() if v is True and k in freq_list]
 		
 		data_list = ['<url>', '<file>', '<query>', '<key>','<email>']
 		for k,v in user_input.items():
 			if v is not None and k in data_list:
-				setattr(self, k,v)
-		self.data = [[re.sub("<|>", "",k),v] for k,v in user_input.items() if v is not None and k in data_list]
-		#self.data_v = [v for k,v in user_input.items() if v is True and k in option_list]
-		return self
+				job[k] = v
+		job['data'] = [[re.sub("<|>", "",k),v] for k,v in user_input.items() if v is not None and k in data_list]
+		#job['data_v = [v for k,v in user_input.items() if v is True and k in option_list]
+		return job
 	
-	def dispatch(self):
+	def dispatch(self, job):
 		#schedule
-		if len(self.action) == 1:
+		if len(job['action']) == 1:
 			self.action, = self.action
 		#udpate
-		elif len(self.scope) == 1:
+		elif len(job['scope']) == 1:
 			self.scope, = self.scope
 		#create or show
 		else:
-			self.create_or_show()		
+			self.create_or_show(job['name'])		
 	'''
 	def create_from_ui(self):
 	'''	

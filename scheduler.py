@@ -139,7 +139,48 @@ class Scheduler(object):
 		#	else:
 		#		print self.show({"user": job.user})
 		#	return 	
-						
+	def create_from_ui(self, user_input):
+		'''user_input info to job properties'''
+		job = {}
+		job['name'] = user_input['<name>']	
+		job['user'] = None
+		if validate_email(job['name']) is True:
+			job['user'] = job['name']
+		
+		action_list = ["report", "extract", "export", "archive", "start", "delete"]
+		job['action'] = [k for k,v in user_input.items() if v is True and k in action_list]
+		
+		scope_list = ["-u", "-r", "-q", "-k", "-s"]
+		job['scope'] = [re.sub("-", "",k) for k,v in user_input.items() if v is True and k in scope_list]
+		
+		option_list = ['add', 'set', 'append', 'delete', 'expand']
+		job['option'] = [k for k,v in user_input.items() if v is True and k in option_list]
+		
+		freq_list = ['<monthly>', '<weekly>', '<daily>']
+		job['freq'] = [re.sub("<|>", "",k) for k,v in user_input.items() if v is True and k in freq_list]
+		
+		data_list = ['<url>', '<file>', '<query>', '<key>','<email>']
+		for k,v in user_input.items():
+			if v is not None and k in data_list:
+				job[k] = v
+		job['data'] = [[re.sub("<|>", "",k),v] for k,v in user_input.items() if v is not None and k in data_list]
+		#job['data_v = [v for k,v in user_input.items() if v is True and k in option_list]
+		return job
+	
+	def dispatch(self, job):
+		job['start_date'] = datetime.now()
+		#schedule
+		if len(job['action']) == 1:
+			job['action'], = job.action
+			
+		#udpate
+		elif len(job['scope']) == 1:
+			job['scope'], = job['scope']
+		#create or show
+		else:
+			self.create_or_show(job['name'])
+		return 
+								
 	def create(self, project_dict):				
 		project_dict["action"] = "crawl"
 		project_dict["start_date"] = datetime.now()
