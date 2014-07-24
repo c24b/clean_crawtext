@@ -60,17 +60,19 @@ class Scheduler(object):
 			#self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file}, "$set":{"option":[]}})
 		elif job.option == "append":
 			print "sources.db add file urls to sources"
+			print job.file
 			#self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file},"$push":{"option": job.option}})
 		elif job.option == "extend":
 			print "sources.db add results to sources"
 			#make results automatically being inserted in sources at the beginning
 			#self.collection.update({"_id": has_job['_id']},"$push":{"option": job.option}})
-		elif job.option == "append" and job.url is not None:
+		elif job.option == "add":
 			print "sources.db add url"
-			
+			print job.url
 		else:
 			#job.option == delete
 			if job.url is not None:
+				print job.url
 				print "sources.db delete url	"
 			else:
 				print "sources.db drop	"
@@ -107,24 +109,25 @@ class Scheduler(object):
 	
 	def schedule(self, user_input):
 		job = Job(user_input)
-			
+		job = job.create_from_ui()
 		if job.name is not None:
-			job = job.create_from_ui()	
-			
+			print job.name, job.action,  job.udpate
+			if job.delete is True:
+				print self.collection.drop(job.name)
+				print "Sucessfully deleted project '%s'" %(job.name) 
+			else:
+				print job.action		
+				if job.action is not None:
+				#run job
+					self.collection.insert(job.__dict__)
+					print "Sucessfully scheduled %s on project '%s'" %(job.action, job.name) 
 			#create_or_show
-			if job.action is None and job.update is None:
-				self.create_or_show(job)
-				
-			#run job
-			elif job.action is not None:
-				self.collection.insert(job.__dict__)
-				print "Sucessfully scheduled %s on project '%s'" %(job.action, job.name) 
-			
+			#elif job.action is None and job.update is None:
+			#	pass
+				#self.create_or_show(job)
 			#udpate job
-			else: #elif job.update is not None:
-				self.udpate(job)
-				
-		
+			#else: #elif job.update is not None:
+			#	self.udpate(job)
 		#show user		
 		else:
 		#elif job.user is not None:

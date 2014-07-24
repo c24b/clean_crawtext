@@ -43,21 +43,21 @@ class Job(object):
 				
 	def create_from_ui(self):
 		'''defaut values from user input'''
-		
+		#user_input_values = action_list+scope_all+scope
 		#main action
 		action_list = ["report", "extract", "export", "archive"]
 		job_action = [k for k, v in self.__dict__.items() if v is True and k in action_list]
 		
 		#update all
-		scope = ["u", "r"]
+		scope_all = ["u", "r"]
 		value = ['email', 'daily', 'weekly','monthly']
-		scope_all = [k for k,v in self.__dict__.items() if v is True and k in scope] 
+		scope_all = [k for k,v in self.__dict__.items() if v is True and k in scope_crawl] 
 		value_all =  [k for k,v in self.__dict__.items() if v is not None and k in value]
 		
 		#update crawl
-		scope = ["q", "s", "k"]
+		scope_crawl = ["q", "s", "k"]
 		option = ['add', 'set', 'append', 'delete', 'expand']
-		scope_crawl = [k for k,v in self.__dict__.items() if v is True and k in scope]
+		scope_crawl = [k for k,v in self.__dict__.items() if v is True and k in scope_all]
 		option_crawl = [k for k,v in self.__dict__.items() if v is True and k in option]
 		
 		
