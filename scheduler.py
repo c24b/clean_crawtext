@@ -36,8 +36,7 @@ class Scheduler(object):
 		option_list = ['add', 'set', 'append', 'delete', 'expand']
 		job['option'] = [k for k,v in user_input.items() if v is True and k in option_list]
 		
-		freq_list = ['<monthly>', '<weekly>', '<daily>']
-		job['freq'] = [re.sub("<|>", "",k) for k,v in user_input.items() if v is True and k in freq_list]
+		job['repeat'] = user_input['<monthly>']
 		
 		data_list = ['<url>', '<file>', '<query>', '<key>','<email>']
 		for k,v in user_input.items():
@@ -51,7 +50,7 @@ class Scheduler(object):
 		'''show user or show project if project doesn't exists create a new one with defaut params'''
 		del job['scope']
 		del job['option']
-		del job['freq']
+		del job['repeat']
 		del job['data']
 		if job['user'] is not None and job['name'] is None:
 			del job['name']
@@ -81,6 +80,7 @@ class Scheduler(object):
 			job['user'] = job['email']
 			del job['email']
 			del job['scope']
+			
 			#if no project with user declared
 			if ex_jobs is None:
 				print "No project '%s' found.\n Creating a new project with defaut user '%s'" %(job['user'], job['email'])
@@ -102,18 +102,20 @@ class Scheduler(object):
 			
 		else:#job['scope'] == "r"
 			if ex_jobs is None:
-				print "No project '%s' found.\n Creating a new project that will be repeated '%s'" %(job['name'], job['freq'])
+				print "No project '%s' found.\n Creating a new project that will be repeated '%s'" %(job['name'], job['repeat'])
 				#print self.get_list({"name": job['name']})
 				del job['scope']
+				del job['option']
+				del job['data']
 				job['action'] = "crawl"
 				job['start_date'] = datetime.now()
 				self.collection.insert(job)
-				return "Project %s has been successfully created and scheduled %s!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'], job['freq'], job['name'])
+				return "Project %s has been successfully created and scheduled %s!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'], job['repeat'], job['name'])
 			else:	
 				for doc in ex_jobs:
-					self.collection.update({"_id": doc['_id']}, {"$set":{"repeat":job['freq']}})
+					self.collection.update({"_id": doc['_id']}, {"$set":{"repeat":job['repeat']}})
 					#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
-				return "Every job of the project '%s' will be executed %s."%(job['name'], job['freq'])
+				return "Every job of the project '%s' will be executed %s."%(job['name'], job['repeat'])
 			
 	def update_sources(self, job):
 		print "update crawl_job sources"
@@ -173,7 +175,6 @@ class Scheduler(object):
 		#udpate
 		elif len(job['scope']) == 1:
 			job['scope'], = job['scope']
-			print job['scope']
 			#update every project
 			if job['scope'] in ['u', 'r']:
 				return self.update_all(job)
