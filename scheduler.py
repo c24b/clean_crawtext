@@ -164,7 +164,7 @@ class Scheduler(object):
 				return "Sucessfully added query \"%s\" for crawl job in project '%s'\nA crawl job needs a query and seeds (Bing API key or/and a set of urls) to be active.\n\n See crawtext.py --help on how to activate the crawl adding seeds" %(job['query'], job['name'])
 			#update crawl_job query
 		elif job['scope'] == "k":
-			print "update crawl_job Key"
+			
 			if has_job is None:
 				del job['repeat']
 				del job['user']
@@ -174,18 +174,19 @@ class Scheduler(object):
 				print "No project '%s' found.\n" %job['name']
 				#print job
 				self.collection.insert(job)
-				return "A default crawl job for project '%s' has been successfully created with query \"%s\" and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'],job['query'], job['name'])
-			else:	
+				return "A default crawl job for project '%s' has been successfully created and scheduled with key \"%s\" \n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'],job['key'], job['name'])
+			else:
+				if job['option'] == "append":
+					#make first search and push it to sources adding a special method from CrawlJob search seeds
+					#c = CrawlJob()
+					#c.search_seeds(job)
+				#job.option == "set":	
 				self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job['key']}})
-				return "Sucessfully added key \"%s\" for crawl job in project '%s'\nA crawl job needs a query and seeds to be active.\n\nSee crawtext.py --help on how to activate the crawl adding a query" %(job['query'], job['name'])
-			#~ if job.option == "set":
-				#~ return self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key}})
-				#self.collection.update({"_id": has_job['_id']}, {"$set":{"option": []}})
-			#update crawl_job Key
-			#else:
+				#"$push":{"update_sources":datetime.today()}
+				return "Sucessfully added key \"%s\" for crawl job in project '%s'\nA crawl job needs a query and seeds to be active.\n\nSee crawtext.py --help on how to activate the crawl adding a query" %(job['key'], job['name'])
 				
-			# job.option == "append":
-				#make first search and push it to sources
+				
+				#make first search and push it to sources adding a special method from CrawlJob search seeds
 				#self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key}})
 				#return self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key},"$push":{"option": job.option}})			
 		else:#job.scope == "s"
