@@ -11,7 +11,10 @@ from page import Page
 import sys
 		
 class CrawlJob(object):
-	def __init__(self): 
+	def __init__(self, job): 
+		for k,v in job.items():
+			setattr(self, k, v)
+			
 		self.date = datetime.now()
 		#required properties
 		self.db = Database(self.name)
@@ -20,9 +23,9 @@ class CrawlJob(object):
 		#~ self.logs = self.db.create_coll('logs')
 		#~ self.queue = self.db.create_coll('queue')
 		self.db.create_colls(['sources', 'results', 'logs', 'queue'])	
+		
 	
-	
-	def get_bing(self, key, query):
+	def get_bing(self, key="", query=""):
 		''' Method to extract results from BING API (Limited to 5000 req/month) automatically sent to sources DB ''' 
 		try:
 			r = requests.get(
@@ -39,8 +42,8 @@ class CrawlJob(object):
 			return True
 		except Exception as e:
 			self.status_code = -2
-			self.error_type = "Error fetching results from BING API.\nError is : (%s).\n>>>>Check your credentials: number of calls may not exceed 5000req/month" %e.args
-			self.db.logs.insert({"status_code":status_code,"error_type": self.error_type})
+			self.error_type = "Error fetching results from BING API.\nError is : \"%s\".\nCheck your API key then check your credentials: number of calls may not exceed 5000req/month" %e.args
+			self.db.logs.insert({"status_code":self.status_code,"error_type": self.error_type})
 			return False
 
 	def get_local(self):
