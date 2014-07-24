@@ -17,35 +17,78 @@ class Scheduler(object):
 		'''init the project base with db and collections'''
 		self.task_db = Database(TASK_MANAGER_NAME)
 		self.collection =self.task_db.create_coll(TASK_COLL)			
+	
+	def create_from_ui(self, user_input):
+		'''user_input info to job properties'''
+		job = {}
+		job['name'] = user_input['<name>']	
+		job['user'] = None
+		
+		if validate_email(job['name']) is True:
+			job['user'] = job['name']
+			
+		action_list = ["report", "extract", "export", "archive", "start", "delete"]
+		job['action'] = [k for k,v in user_input.items() if v is True and k in action_list]
+		
+		scope_list = ["-u", "-r", "-q", "-k", "-s"]
+		job['scope'] = [re.sub("-", "",k) for k,v in user_input.items() if v is True and k in scope_list]
+		
+		option_list = ['add', 'set', 'append', 'delete', 'expand']
+		job['option'] = [k for k,v in user_input.items() if v is True and k in option_list]
+		
+		freq_list = ['<monthly>', '<weekly>', '<daily>']
+		job['freq'] = [re.sub("<|>", "",k) for k,v in user_input.items() if v is True and k in freq_list]
+		
+		data_list = ['<url>', '<file>', '<query>', '<key>','<email>']
+		for k,v in user_input.items():
+			if v is not None and k in data_list:
+				job[k] = v
+		job['data'] = [[re.sub("<|>", "",k),v] for k,v in user_input.items() if v is not None and k in data_list]
+		#job['data_v = [v for k,v in user_input.items() if v is True and k in option_list]
+		return job
+		
 	def create_or_show(self, job):
-		#create_or_show
-		has_job = self.get_one({"name": job.name})
-		if has_job is None:
-			job.action = "crawl"
-			return self.create(job.__dict__)
+		'''show user or show project if project doesn't exists create a new one with defaut params'''
+		if job['user'] is not None and job['name'] is None:
+			has_user = self.get_one({"user": job['user']})
+			if has_user is None:
+				return "No user '%s' registered." %job['user']
+			else:
+				#print has_user
+				return self.show({"user":job['user']}, "name")
 		else:
-			#print has_job
-			return self.show({"name":job.name}, "action")
+			has_job = self.get_one({"name": job['name']})
+			if has_job is None:
+				job['action'] = "crawl"
+				self.collection.insert(job)
+				return "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(project_dict['name'],project_dict['name'])			
+			else:
+				#print has_job
+				return self.show({"name":job['name']}, "action")
 	
 	def update_all(self, job):
-		if job.scope == "u":
-			ex_jobs = self.get_list({"user": job.user, "name": job.name})
+		#update user ownernship
+		if job['scope'] == "u":
+			ex_jobs = self.get_list({"user": job['user'], "name": job['name']})
+			print ex_jobs
+			#if no project with user declared
 			if ex_jobs is None:
-				ex_jobs = self.get_list({"name": job.name})
-				for doc in ex_jobs:
-					self.collection.update({"_id": doc['_id']}, {"$set":{"user": job.user}})
+				print "No project with user: %s found" %job['user']
+				#ex_jobs = self.get_list({"name": job['name']})
+				#for doc in ex_jobs:
+				#	self.collection.update({"_id": doc['_id']}, {"$set":{"user": job['user']}})
 					#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
-				print "All jobs of project %s are sucessfully owned by %s"%(job.name, job.user)
+				return "All jobs of project %s are sucessfully owned by %s"%(job['name'], job['user'])
 			else:
 				#Raise pymongo.errors.OperationFailure: database error: Unsupported projection option: $exists
 				#ex_jobs = self.collection.find({"name": job.name}, {"user":{"$exists": False}})
-				ex_jobs = self.collection.find({"name": job.name})
+				ex_jobs = self.collection.find({"name": job['name']})
 				for doc in ex_jobs:
-					self.collection.update({"_id": doc['_id']}, {"$set":{"user": job.user}})
+					self.collection.update({"_id": doc['_id']}, {"$set":{"user": job['user']}})
 					#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})
-				print "Every job of the project '%s' are now belonging to %s."%(job.name, job.user)
+				return "Every job of the project '%s' are now belonging to %s."%(job['name'], job['user'])
 			
-			return self.show({"user":job.user}, "name")
+			#return self.show({"user":job.user}, "name")
 		else:
 			ex_jobs = self.collection.find({"name": job.name})
 			for doc in ex_jobs:
@@ -95,110 +138,45 @@ class Scheduler(object):
 		else:#job.scope == "s"
 			return self.udpate_sources(job)
 					
-	def update_job(job):
-		if job.update == "all":
-			return self.update_all(job)
-					
-		else:#job.update == "crawl":
-			has_job = self.get_one({"name": job.name, "action": "crawl"})
-			if has_job is None:
-				return self.create(job.__dict__)
-			else:
-				self.update_crawl(job)
-				return self.collection.update({"_id": has_job['_id']}, {"date":{"$push": datetime.today}})						
-	
 	def schedule(self, user_input):
-		job = Job()
-		job = job.create_from_ui(user_input)
-		print job.__dict__
-		#~ if job.name is not None:
-			#~ print job.name, job.action,  job.udpate
-			#~ if job.delete is True:
-				#~ print self.collection.drop(job.name)
-				#~ print "Sucessfully deleted project '%s'" %(job.name) 
-			#~ else:
-				#~ print job.action		
-				#~ if job.action is not None:
-				#~ #run job
-					#~ self.collection.insert(job.__dict__)
-					#~ print "Sucessfully scheduled %s on project '%s'" %(job.action, job.name) 
-			#create_or_show
-			#elif job.action is None and job.update is None:
-			#	pass
-				#self.create_or_show(job)
-			#udpate job
-			#else: #elif job.update is not None:
-			#	self.udpate(job)
-		#show user		
-		#else:
-		#elif job.user is not None:
-		#	has_user = self.get_one({"user": job.user})
-		#	if has_user is None:
-		#		print "No project found with user %s" %job.user
-				
-		#	else:
-		#		print self.show({"user": job.user})
-		#	return 	
-	def create_from_ui(self, user_input):
-		'''user_input info to job properties'''
-		job = {}
-		job['name'] = user_input['<name>']	
-		job['user'] = None
-		if validate_email(job['name']) is True:
-			job['user'] = job['name']
-		
-		action_list = ["report", "extract", "export", "archive", "start", "delete"]
-		job['action'] = [k for k,v in user_input.items() if v is True and k in action_list]
-		
-		scope_list = ["-u", "-r", "-q", "-k", "-s"]
-		job['scope'] = [re.sub("-", "",k) for k,v in user_input.items() if v is True and k in scope_list]
-		
-		option_list = ['add', 'set', 'append', 'delete', 'expand']
-		job['option'] = [k for k,v in user_input.items() if v is True and k in option_list]
-		
-		freq_list = ['<monthly>', '<weekly>', '<daily>']
-		job['freq'] = [re.sub("<|>", "",k) for k,v in user_input.items() if v is True and k in freq_list]
-		
-		data_list = ['<url>', '<file>', '<query>', '<key>','<email>']
-		for k,v in user_input.items():
-			if v is not None and k in data_list:
-				job[k] = v
-		job['data'] = [[re.sub("<|>", "",k),v] for k,v in user_input.items() if v is not None and k in data_list]
-		#job['data_v = [v for k,v in user_input.items() if v is True and k in option_list]
-		return job
-	
-	def dispatch(self, job):
-		job['start_date'] = datetime.now()
-		#schedule
+		job = self.create_from_ui(user_input)
+		#schedule		
 		if len(job['action']) == 1:
-			job['action'], = job.action
-			
+			job['action'], = job['action']
+			job['start_date'] = datetime.now()
+			self.collection.insert(job)
+			return "Sucessfully scheduled %s on %s" %(job['action'], job['name'])
 		#udpate
 		elif len(job['scope']) == 1:
 			job['scope'], = job['scope']
+			#update every project
+			if job['scope'] in ['u', 'r']:
+				self.update_all(job)
+			#udpate crawl
+			else:
+				
+				job['action'] = crawl
+				job['start_date'] = datetime.now()
+				has_job = self.get_one({"name": job['name'], "action": job['action']})
+				if has_job is None:
+					self.collection.insert(job)
+					return "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(project_dict['name'],project_dict['name'])
+				else:
+					return self.update_crawl(job)
 		#create or show
 		else:
-			self.create_or_show(job['name'])
-		return 
-								
-	def create(self, project_dict):				
-		project_dict["action"] = "crawl"
-		project_dict["start_date"] = datetime.now()
-		for k, v in project_dict.items():
-			 if v is None or v is False:
-				 del project_dict[k]
-		self.collection.insert(project_dict)
-		print "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(project_dict['name'],project_dict['name'])			
-		return
-		
-	
+			job['action'] = crawl
+			job['start_date'] = datetime.now()
+			self.create_or_show(job)
+			return "Sucessfully scheduled %s on %s" %(job['action'], job['name'])
+
 	def delete(self, project_name):
 		'''Delete existing project'''
 		job_list = self.get_list(project_name)
 		if job_list is not None:
+			#one by one
 			#~ for n in job_list:
 				#~ self.collection.remove(n)
-			#~ print "All the tasks of the project '%s' have been sucessfully deleted !"%project_name
 			self.collection.drop(project_name)
 			print "All the tasks of the project '%s' have been sucessfully deleted !"%project_name
 			return True
@@ -207,6 +185,7 @@ class Scheduler(object):
 			return False
 			
 	def get_one(self, project_name):
+		'''get one job'''
 		if project_name is None:
 			return None
 		elif type(project_name) == dict:
@@ -249,9 +228,7 @@ class Scheduler(object):
 				print "*******"
 				for k,v in job.items():
 					if v is not False or v is not None:
-						print k, v
-				
-				
+						print k, v		
 			return "*******************************************" 			
 		
 	def show_by(self, doc , by="name"):
