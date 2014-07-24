@@ -110,17 +110,18 @@ class Scheduler(object):
 	def schedule(self, user_input):
 		job = Job(user_input)
 		job = job.create_from_ui()
-		if job.name is not None:
-			print job.name, job.action,  job.udpate
-			if job.delete is True:
-				print self.collection.drop(job.name)
-				print "Sucessfully deleted project '%s'" %(job.name) 
-			else:
-				print job.action		
-				if job.action is not None:
-				#run job
-					self.collection.insert(job.__dict__)
-					print "Sucessfully scheduled %s on project '%s'" %(job.action, job.name) 
+		print job
+		#~ if job.name is not None:
+			#~ print job.name, job.action,  job.udpate
+			#~ if job.delete is True:
+				#~ print self.collection.drop(job.name)
+				#~ print "Sucessfully deleted project '%s'" %(job.name) 
+			#~ else:
+				#~ print job.action		
+				#~ if job.action is not None:
+				#~ #run job
+					#~ self.collection.insert(job.__dict__)
+					#~ print "Sucessfully scheduled %s on project '%s'" %(job.action, job.name) 
 			#create_or_show
 			#elif job.action is None and job.update is None:
 			#	pass
