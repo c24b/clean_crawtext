@@ -12,50 +12,59 @@ import sys
 
 class Job(object):
 	#__metaclass__ = ABCMeta
-	def __init__(self, user_input):
-		#normalizing between DB and docopt
-		for k,v in user_input.items():
-			k = re.sub("<|>|-|--", "", k)
-			if k not in ["task_db", "coll", "job", "collection"]:
-				setattr(self,k,v)
-		self.check_name_or_user_or_website()	
-		
-	def check_name_or_user_or_website(self):
-		if self.name is not None and self.user is None:
-			if validate_email(self.name) is True:
-			#means show all project belonging to the given user
-				self.user = self.name
-				self.name = None
-		elif self.name is not None and self.user is not None:
-			#means setting up ownership
+	def __init__(self):
+		pass
+	
+	def create_from_ui(self, user_input):
+		'''user_input info to job properties'''
+		self.name = user_input['<name>']	
+		self.user = None
+		if validate_email(self.name) is True:
 			self.user = self.name
-			self.name = self.user
-			self.action = "update"
-			self.update = "all"
-		else:
-			if self.archive is True and self.name is None:
-				self.name = self.url
-				self.action = "archive"
-				self.update = None
-			else:
-				pass	
-		return self
-				
-	def create_from_ui(self):
-		'''defaut values from user input'''
 		
+		action_list = ["report", "extract", "export", "archive", "start", "delete"]
+		self.action = [k for k,v in user_input.items() if v is True and k in action_list]
+		
+		scope_list = ["-u", "-r", "-q", "-k", "-s"]
+		self.scope = [re.sub("-", "",k) for k,v in user_input.items() if v is True and k in scope_list]
+		
+		option_list = ['add', 'set', 'append', 'delete', 'expand']
+		self.option = [k for k,v in user_input.items() if v is True and k in option_list]
+		
+		freq_list = ['<monthly>', '<weekly>', '<daily>']
+		self.freq = [re.sub("<|>", "",k) for k,v in user_input.items() if v is True and k in freq_list]
+		
+		data_list = ['<url>', '<file>', '<query>', '<key>','<email>']
+		for k,v in user_input.items():
+			if v is not None and k in data_list:
+				setattr(self, k,v)
+		self.data = [[re.sub("<|>", "",k),v] for k,v in user_input.items() if v is not None and k in data_list]
+		#self.data_v = [v for k,v in user_input.items() if v is True and k in option_list]
+		return self
+	
+	def dispatch(self):
+		#schedule
+		if len(self.action) == 1:
+			self.action, = self.action
+		#udpate
+		elif len(self.scope) == 1:
+			self.scope, = self.scope
+		#create or show
+		else:
+					
+	'''
+	def create_from_ui(self):
+	'''	
+		#'''defaut values from user input'''
+	
 		#main action
-		action_list = ["report", "extract", "export", "archive"]
-		job_action = [k for k in self.__dict__.keys() if  k in action_list]
+		
 		
 		#update all
-		scope_all = ["u", "r"]
 		
-		a_scope = [k for k in self.__dict__.keys() if k in scope_all] 
-		value = ['daily', 'weekly','monthly']
-		value_all =  [k for k in self.__dict__.keys() if k in value]
 		
 		#update crawl
+	'''
 		scope_crawl = ["q", "s", "k"]
 		crawl_scope = [k for k in self.__dict__.keys() if k in scope_crawl]
 		c_option = ['add', 'set', 'append', 'delete', 'expand']
@@ -72,9 +81,7 @@ class Job(object):
 			
 					
 		if len(job_action) != 0:
-			self.action = job_action[0]
-			self.update = None
-			self.start_date = datetime.now()
+			
 			self.start_date = datetime.today()
 			return self
 		
@@ -98,7 +105,7 @@ class Job(object):
 			self.action = None
 			self.update = None
 			return self
-		
+	'''	
 		
 
 	def create_from_database(self):

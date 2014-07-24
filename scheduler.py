@@ -108,8 +108,8 @@ class Scheduler(object):
 				return self.collection.update({"_id": has_job['_id']}, {"date":{"$push": datetime.today}})						
 	
 	def schedule(self, user_input):
-		job = Job(user_input)
-		job = job.create_from_ui()
+		job = Job()
+		job = job.create_from_ui(user_input)
 		print job.__dict__
 		#~ if job.name is not None:
 			#~ print job.name, job.action,  job.udpate
