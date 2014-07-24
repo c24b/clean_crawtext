@@ -51,7 +51,7 @@ class Job(object):
 			self.scope, = self.scope
 		#create or show
 		else:
-					
+			self.create_or_show()		
 	'''
 	def create_from_ui(self):
 	'''	
