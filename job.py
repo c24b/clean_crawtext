@@ -11,7 +11,7 @@ from page import Page
 import sys
 		
 class CrawlJob(object):
-	def __init__(self, job): 
+	def __init__(self): 
 		self.date = datetime.now()
 		#required properties
 		self.db = Database(self.name)
@@ -19,28 +19,28 @@ class CrawlJob(object):
 		#~ self.results = self.db.create_coll('results')
 		#~ self.logs = self.db.create_coll('logs')
 		#~ self.queue = self.db.create_coll('queue')
-		self.db.create_colls(['sources', 'results', 'logs', 'queue')	
+		self.db.create_colls(['sources', 'results', 'logs', 'queue'])	
 	
-	@staticmethod	
-	def get_bing(job['key']):
-		''' Method to extract results from BING API (Limited to 5000 req/month). ''' 
+	
+	def get_bing(self, key, query):
+		''' Method to extract results from BING API (Limited to 5000 req/month) automatically sent to sources DB ''' 
 		try:
 			r = requests.get(
 					'https://api.datamarket.azure.com/Bing/Search/v1/Web', 
 					params={
 						'$format' : 'json',
 						'$top' : 100,
-						'Query' : '\'%s\'' % self.query,
+						'Query' : '\'%s\'' % query,
 					},
-					auth=(self.key, self.key)
+					auth=(key, key)
 					)
 			for e in r.json()['d']['results']:
 				self.insert_url(e["Url"],origin="bing")
 			return True
 		except Exception as e:
-			print "Bing exception", e
 			self.status_code = -2
 			self.error_type = "Error fetching results from BING API.\nError is : (%s).\n>>>>Check your credentials: number of calls may not exceed 5000req/month" %e.args
+			self.db.logs.insert({"status_code":status_code,"error_type": self.error_type})
 			return False
 
 	def get_local(self):
@@ -69,15 +69,15 @@ class CrawlJob(object):
 		'''Expand sources url adding results urls collected from previous crawl'''
 		for url in self.db.results.distinct("url"):
 			if url not in self.db.sources.find({"url": url}):
-				self.insert_url(url, origin="expand")
+				self.insert_url(url, "automatic")
 		return
 				
 	def insert_url(self, url, origin="default"):
 		if url not in self.db.sources.find({"url": url}):
-			self.db.sources.insert({"url":url, "origin":"bing","date":[datetime.today()]}, upsert=True)
+			return self.db.sources.insert({"url":url, "origin":origin,"date":[datetime.today()]})
 		else:
-			self.db.sources.update({"url":url,"origin":origin, "$push": {"date":datetime.today()}}, upsert=False)
-		return self.db.sources.find_one({"url": url})
+			return self.db.sources.update({"url":url,"origin":origin, "$push": {"date":datetime.today()}})
+		
 	
 	def delete_url(self, url, origin="default"):
 		if url not in self.db.sources.find({"url": url}):
@@ -224,7 +224,7 @@ class CrawlJob(object):
 		
 		return self
 	
-class ReportJob(Job):
+class ReportJob(object):
 	def __init__(self, doc):
 		print "Report Job"
 		self.date = datetime.now()
@@ -240,7 +240,7 @@ class ReportJob(Job):
 		print "Successfully generated report for %s" %self.name 	
 		return self	
 		
-class ArchiveJob(Job):
+class ArchiveJob(object):
 	def __init__(self, doc):
 		self.date = datetime.now()
 		for k, v in doc.items():
@@ -249,7 +249,7 @@ class ArchiveJob(Job):
 	def run(self):
 		print "Archiving %s" %self.url
 		
-class ExportJob(Job):
+class ExportJob(object):
 	def __init__(self, doc):
 		self.date = datetime.now()
 		for k, v in doc.items():

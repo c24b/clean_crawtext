@@ -9,7 +9,7 @@ from abc import ABCMeta, abstractmethod
 import docopt
 from utils import *
 from datetime import datetime
-from job import Job
+from job import CrawlJob
 
 class Scheduler(object):
 	''' main access to Job Database'''
@@ -178,8 +178,15 @@ class Scheduler(object):
 			else:
 				if job['option'] == "append":
 					#make first search and push it to sources adding a special method from CrawlJob search seeds
-					#c = CrawlJob()
-					#c.search_seeds(job)
+					c = CrawlJob()
+					if has_job['query'] is not None:
+						if c.get_bing(job['key'], has_job['query']) is True:
+							print "Seeds from search successfully added to sources of crawl project '%s'" % job['name']
+						else:
+							print c.error_type
+					else:
+						print "Unable to search new seeds. No query has been set.\nTo set a query to your crawl project '%s' type:\n python crawtext.py %s -q \"your awesome query AND very interesting OR intelligent query\""
+						
 				#job.option == "set":	
 				self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job['key']}})
 				#"$push":{"update_sources":datetime.today()}
