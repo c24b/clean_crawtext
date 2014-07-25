@@ -90,122 +90,71 @@ class CrawlJob(object):
 		''' Method to add new seed to sources and send them to queue if sourcing is deactivate'''
 		try:
 			if self.file is not None:
-				print "Getting local urls"
-				self.get_local()
-			if self.key is not None:
-				print "Searching on Bing"
-				self.get_bing()
-			return self
-			
+				print "Getting seeds from file %s" %self.file
+				self.get_local(self.file)
+			else:
+				pass
+			if self.query is not None:
+				print "Getting seeds from Bing results on search %s" %self.query
+				if self.key is not None:
+					self.get_bing(self.key, self.query)
+				else:
+					print "No credential for search in Bing. Please set up a api key."
+			else:
+				print "No query set."
+				pass
+				
+			if self.option == "expand":
+				self.expand()
+			return True
 		except Exception as e:
-			print ">>>> collecting source error:", e
-		if self.query is not None:
-			if self.filename is not None:
-				print self.filename
-				self.get_local()
-			if self.key is not None:
-				print self.key
-				self.get_bing()
-			#~ if self.expand is True:
-				#~ self.expand()
-		else:
+			print e
+			print "Enable to load seeds. Bad configuration of project %s. Check the missing project parameter for crawl by typing: python crawtext.py %s" %(self.name, self.name)
 			return False
 		
 	def send_seeds_to_queue(self):
 		#here we could filter out problematic urls
 		for url in self.db.sources.distinct("url"):
 			self.db.queue.insert({"url":url})
-		return self
+		return True
 		
-	def activate(self):
-		if self.query is None:
-			print "No query search has been configured for crawl project\nPlease provide a query expression:\tcrawtext.py %s -q \"your_query_expression\""	
-			return False
-		else:
-			if len(self.db.sources.distinct("url")) <= 0:
-				if self.file is None and self.key is None:
-					print "No sources have been configured for crawl project\n Please provide or a list of url using a file\nA\)To define sources to crawl using a file:\tcrawtext.py %s -s set your_sources_file.txt\nB\)To define sources to crawl using search option adding a Bing API key crawtext %s -k set your_api_key" %(self.name, self.name)
-					return False	
-				else:
-					self.collect_sources()
-			self.send_seeds_to_queue()
-			return True
-	
 			
 	def run(self):
-		print "running crawl on %i sources with query '%s'" %(self.db.sources.count(), self.query)
-		if self.activate():
-			start = datetime.now()
-			while self.db.queue.count > 0:
-				for url in self.db.queue.distinct("url"):
-					page = Page(url, self.query)
-					if page.status is False:
-						self.db.logs.insert(page.bad_status())
-					else:
-						print page.__dict__
-						self.db.results.insert(page.info)
-						
-					self.db.queue.remove({"url": url})
-					if self.db.queue.count() == 0:
-						break
-			
-				if self.db.queue.count() == 0:		
-					break
-			print "Crawl done succesfully"
-			end = datetime.now()
-			elapsed = end - start
-			print "Crawl done sucessfully:\n-%i results\n-%i non pertinents urls \n-%i errors. \nElapsed time %s" %(len([n for n in self.db.results.find()]), len([n for n in self.db.logs.find()]), len([n for n in self.db.logs.find({"error_code":"-1"})]),elapsed)
-			print "To export results, logs, sources:\n python crawtext.py export %s" %self.name
-		else:
-			pass
-			
-		if self.query is not None:
-			if self.filename is not None or self.key is not None:
-				self.collect_sources()
-				return self.send_seeds_to_queue()
-			else:
-				print "No sources have been configured for crawl project\n Please provide or a list of url using a file\nA\)To define sources to crawl using a file:\tcrawtext.py %s -s set your_sources_file.txt\nB\)To define sources to crawl using search option adding a Bing API key crawtext %s -k set your_api_key" %(self.name, self.name)
-		else:
-			print "No query search has been configured for crawl project\nPlease provide a query expression:\tcrawtext.py %s -q \"your_query_expression\""
-			
-	def run(self):
-		if self.f is True or self.q is True:
-			self.activate()
-		else:
-			if self.query is not None:
-				if self.filename is not None or self.key is not None:
-					self.collect_sources()
-					return self.send_seeds_to_queue()
-				else:
-					print "No sources have been configured for crawl project\n Please provide or a list of url using a file\nA\)To define sources to crawl using a file:\tcrawtext.py %s -s set your_sources_file.txt\nB\)To define sources to crawl using search option adding a Bing API key crawtext %s -k set your_api_key" %(self.name, self.name)
-			else:
-				print "No query search has been configured for crawl project\nPlease provide a query expression:\tcrawtext.py %s -q \"your_query_expression\""
-			
-		#~ self.activate()
-
-		#~ start = datetime.now()
-		#~ while self.db.queue.count > 0:
-			#~ for url in self.db.queue.distinct("url"):
-				#~ page = Page(url)
-				#~ if page.logs["status"] is False:
-					#~ self.db.logs.insert(page.logs)
-				#~ else:
-					#~ page.extract("article")
-					#~ print page.title 
+		seeds = self.collect_sources()
+		waiting= self.send_seeds_to_queue()
+		if seeds is True:	
+			if waiting is True:
+				print "running crawl on %i sources with query '%s'" %(self.db.sources.count(), self.query)
+		
+				start = datetime.now()
+				while self.db.queue.count > 0:	
+					for url in self.db.queue.distinct("url"):
+						print url
+						#~ page = Page(url, self.query)
+						#~ if page.status is False:
+							#~ self.db.logs.insert(page.bad_status())
+						#~ else:
+							#~ print page.__dict__
+							#~ self.db.results.insert(page.info)
+								#~ 
+						#~ self.db.queue.remove({"url": url})
+						#~ if self.db.queue.count() == 0:
+							#~ break
 					#~ 
-				#print page.status
-					#~ #print page.canonical_link
-				#~ # else:
-				#~ # 	self.db.logs.insert(article.bad_status())
-				#~ self.db.queue.remove({"url": url})
-				#~ if self.db.queue.count() == 0:
-					#~ break
-			#~ 
-			#~ if self.db.queue.count() == 0:		
-				#~ break
-		#~ 
-		
-		return self
+					#~ if self.db.queue.count() == 0:		
+						#~ break
+					#~ print "Crawl done succesfully"
+					#~ end = datetime.now()
+					#~ elapsed = end - start
+					#~ print "Crawl done sucessfully:\n-%i results\n-%i non pertinents urls \n-%i errors. \nElapsed time %s" %(len([n for n in self.db.results.find()]), len([n for n in self.db.logs.find()]), len([n for n in self.db.logs.find({"error_code":"-1"})]),elapsed)
+					#~ print "To export results, logs, sources:\n python crawtext.py export %s" %self.name
+			else:
+				return waiting
+		else:
+			return seeds
+			
+			
+	
 	
 class ReportJob(object):
 	def __init__(self, doc):

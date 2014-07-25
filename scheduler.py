@@ -255,8 +255,11 @@ class Scheduler(object):
 			else:
 				del job['repeat']
 				del job['data']
-				job['option'], = job['option']
-				job['scope'], = job['scope']
+				try:
+					job['option'], = job['option']
+				except ValueError:
+					del job['option']
+					
 				return self.update_crawl(job)
 		#create or show
 		else:
