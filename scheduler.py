@@ -122,24 +122,24 @@ class Scheduler(object):
 			
 	def update_sources(self, job):
 		print "update crawl_job sources"
-		if job.option == "set":
-			print job.file
+		if job['option'] == "set":
+			print job['file']
 			#self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file}, "$set":{"option":[]}})
-		elif job.option == "append":
+		elif job['option'] == "append":
 			print "sources.db add file urls to sources"
-			print job.file
-			#self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file},"$push":{"option": job.option}})
-		elif job.option == "extend":
+			print job['file']
+			#self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file},"$push":{"option": job['option']}})
+		elif job['option'] == "extend":
 			print "sources.db add results to sources"
 			#make results automatically being inserted in sources at the beginning
-			#self.collection.update({"_id": has_job['_id']},"$push":{"option": job.option}})
-		elif job.option == "add":
+			#self.collection.update({"_id": has_job['_id']},"$push":{"option": job['option']}})
+		elif job['option'] == "add":
 			print "sources.db add url"
-			print job.url
+			print job['url']
 		else:
-			#job.option == delete
+			#job['option'] == delete
 			if job.url is not None:
-				print job.url
+				print job['url']
 				print "sources.db delete url	"
 			else:
 				print "sources.db drop	"
@@ -176,8 +176,6 @@ class Scheduler(object):
 				self.collection.insert(job)
 				return "A default crawl job for project '%s' has been successfully created and scheduled with key \"%s\" \n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'],job['key'], job['name'])
 			else:
-				
-				job['option'], =  job['option']
 				if job['option'] == "append":
 					
 					self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job['key']}})
@@ -197,13 +195,9 @@ class Scheduler(object):
 					return "Sucessfully added key \"%s\" for crawl job in project '%s'\nA crawl job needs a query and seeds to be active.\n\nSee crawtext.py --help on how to activate the crawl adding a query" %(job['key'], job['name'])
 				
 				
-				#make first search and push it to sources adding a special method from CrawlJob search seeds
-				#self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key}})
-				#return self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job.key},"$push":{"option": job.option}})			
+				
 		else:#job.scope == "s"
-			print "update sources"
-			print job.items()
-			#return self.udpate_sources(job)
+			return self.udpate_sources(job)
 					
 	def schedule(self, user_input):
 		job = self.create_from_ui(user_input)
@@ -220,23 +214,22 @@ class Scheduler(object):
 			return "Sucessfully scheduled %s on %s" %(job['action'], job['name'])
 		#udpate
 		elif len(job['scope']) == 1:
+			
 			job['scope'], = job['scope']
 			#update every project
 			if job['scope'] in ['u', 'r']:
+				del job['scope']
+				del job['repeat']
+				del job['data']
 				return self.update_all(job)
 				 
 			#udpate crawl
 			else:
+				del job['scope']
+				del job['repeat']
+				del job['data']
+				job['option'], = job['option']
 				return self.update_crawl(job)
-				
-				#~ has_job = self.get_one({"name": job['name'], "action": job['action']})
-				#~ if has_job is None:
-					#~ print self.job
-					#~ #self.collection.insert(job)
-					#~ return "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'],job['name'])
-				#~ else:
-					#~ print self.
-					#return self.update_crawl(job)
 		#create or show
 		else:
 			return self.create_or_show(job)
@@ -283,7 +276,7 @@ class Scheduler(object):
 				#print "*** Project %s: %s ****" %(project_name.keys(), project_name.values())
 				return project_list
 			else:
-				return  None
+				return None
 		elif type(project_name) == str:
 			project_list = [n for n in self.collection.find({"name":project_name})]
 			if len(project_list)> 0:
@@ -297,10 +290,13 @@ class Scheduler(object):
 		if project_list is not None:
 			print "******\t%s : %s    ******" %(by, values.values()[0])
 			for job in project_list:
-				print "*******"
+				
 				for k,v in job.items():
+					if k == ['_id']:
+						continue
 					if v is not False or v is not None:
-						print k, v		
+						print k, v
+				print "====================="		
 			return "*******************************************" 			
 		
 	def show_by(self, doc , by="name"):
