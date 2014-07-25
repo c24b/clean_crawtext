@@ -14,7 +14,9 @@ from multiprocessing import Pool
 import subprocess
 class CrawlJob(object):
 	def __init__(self, job): 
+		self.option = None
 		for k,v in job.items():
+			print k
 			setattr(self, k, v)
 			
 		self.date = datetime.now()
@@ -88,29 +90,23 @@ class CrawlJob(object):
 		
 	def collect_sources(self):
 		''' Method to add new seed to sources and send them to queue if sourcing is deactivate'''
-		try:
-			if self.file is not None:
-				print "Getting seeds from file %s" %self.file
-				self.get_local(self.file)
-			else:
-				pass
-			if self.query is not None:
-				print "Getting seeds from Bing results on search %s" %self.query
-				if self.key is not None:
-					self.get_bing(self.key, self.query)
-				else:
-					print "No credential for search in Bing. Please set up a api key."
-			else:
-				print "No query set."
-				pass
-				
-			if self.option == "expand":
+		
+		if self.option == "expand":
 				self.expand()
+		if self.file is not None:
+			print "Getting seeds from file %s" %self.file
+			self.get_local(self.file)
+		
+		if self.query is not None:
+			print "Getting seeds from Bing results on search %s" %self.query
+			if self.key is not None:
+				self.get_bing(self.key, self.query)
+			else:
+				print "Search seeds is deactivated. No credential for search in Bing have been foud. Please set up a api key if you want to activate search."
 			return True
-		except Exception as e:
-			print e
-			print "Enable to load seeds. Bad configuration of project %s. Check the missing project parameter for crawl by typing: python crawtext.py %s" %(self.name, self.name)
-			return False
+		else:
+			return False	
+			
 		
 	def send_seeds_to_queue(self):
 		#here we could filter out problematic urls
@@ -120,38 +116,40 @@ class CrawlJob(object):
 		
 			
 	def run(self):
+		if self.query is not None:
+			return "Unable to start crawl: no query has been set."
 		seeds = self.collect_sources()
-		waiting= self.send_seeds_to_queue()
-		if seeds is True:	
-			if waiting is True:
-				print "running crawl on %i sources with query '%s'" %(self.db.sources.count(), self.query)
-		
-				start = datetime.now()
-				while self.db.queue.count > 0:	
-					for url in self.db.queue.distinct("url"):
-						print url
-						#~ page = Page(url, self.query)
-						#~ if page.status is False:
-							#~ self.db.logs.insert(page.bad_status())
-						#~ else:
-							#~ print page.__dict__
-							#~ self.db.results.insert(page.info)
-								#~ 
-						#~ self.db.queue.remove({"url": url})
-						#~ if self.db.queue.count() == 0:
-							#~ break
-					#~ 
-					#~ if self.db.queue.count() == 0:		
-						#~ break
-					#~ print "Crawl done succesfully"
-					#~ end = datetime.now()
-					#~ elapsed = end - start
-					#~ print "Crawl done sucessfully:\n-%i results\n-%i non pertinents urls \n-%i errors. \nElapsed time %s" %(len([n for n in self.db.results.find()]), len([n for n in self.db.logs.find()]), len([n for n in self.db.logs.find({"error_code":"-1"})]),elapsed)
-					#~ print "To export results, logs, sources:\n python crawtext.py export %s" %self.name
-			else:
-				return waiting
+		if self.db.sources.count() == 0:
+			return "Unable to start crawl: no seeds have been set."
 		else:
-			return seeds
+			self.send_seeds_to_queue()
+		
+		print "running crawl on %i sources with query '%s'" %(self.db.sources.count(), self.query)
+		start = datetime.now()
+		while self.db.queue.count > 0:	
+			for url in self.db.queue.distinct("url"):
+				print url
+				#~ page = Page(url, self.query)
+				#~ if page.status is False:
+					#~ self.db.logs.insert(page.bad_status())
+				#~ else:
+					#~ print page.__dict__
+					#~ self.db.results.insert(page.info)
+						#~ 
+				self.db.queue.remove({"url": url})
+				#~ if self.db.queue.count() == 0:
+					#~ break
+			#~ 
+				if self.db.queue.count() == 0:		
+					break
+			if self.db.queue.count() == 0:		
+					break
+					
+		return "Crawl done succesfully"
+			#~ end = datetime.now()
+			#~ elapsed = end - start
+			#~ print "Crawl done sucessfully:\n-%i results\n-%i non pertinents urls \n-%i errors. \nElapsed time %s" %(len([n for n in self.db.results.find()]), len([n for n in self.db.logs.find()]), len([n for n in self.db.logs.find({"error_code":"-1"})]),elapsed)
+			#~ print "To export results, logs, sources:\n python crawtext.py export %s" %self.name
 			
 			
 	

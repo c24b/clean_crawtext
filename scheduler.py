@@ -224,7 +224,7 @@ class Scheduler(object):
 			has_job = self.collection.find_one({"name": job['name'], "action":"crawl"})
 			if has_job:
 				c = CrawlJob(has_job)
-				c.run()
+				return c.run()
 				#return os.spawnl(os.P_NOWAIT, c.run())
 			else:
 				return "Job project not properly configured.\n Type python crawtext.py %s to see parameters" %self.name
