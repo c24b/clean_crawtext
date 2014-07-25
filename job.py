@@ -16,7 +16,6 @@ class CrawlJob(object):
 	def __init__(self, job): 
 		self.option = None
 		for k,v in job.items():
-			print k
 			setattr(self, k, v)
 			
 		self.date = datetime.now()
@@ -116,7 +115,7 @@ class CrawlJob(object):
 		
 			
 	def run(self):
-		if self.query is not None:
+		if self.query is None:
 			return "Unable to start crawl: no query has been set."
 		seeds = self.collect_sources()
 		if self.db.sources.count() == 0:

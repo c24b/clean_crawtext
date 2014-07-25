@@ -161,7 +161,7 @@ class Scheduler(object):
 		job['start_date'] = datetime.today() 
 		has_job = self.get_one({"name": job['name'], "action": job['action']})
 		if job['scope'] == "q":
-			print "update crawl_job query"
+			
 			if has_job is None:
 				del job['repeat']
 				del job['user']
@@ -171,10 +171,10 @@ class Scheduler(object):
 				print "No project '%s' found.\n" %job['name']
 				#print job
 				self.collection.insert(job)
-				return "A default crawl job for project %s has been successfully created with query \"%s\" and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'],job['query'], job['name'])
+				return "A default crawl job for project %s has been successfully created with query \"%s\".\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'],job['query'], job['name'])
 			else:	
 				self.collection.update({"_id": has_job['_id']}, {"$set":{"query": job['query']}})
-				return "Sucessfully added query \"%s\" for crawl job in project '%s'\nA crawl job needs a query and seeds (Bing API key or/and a set of urls) to be active.\n\n See crawtext.py --help on how to activate the crawl adding seeds" %(job['query'], job['name'])
+				return "Sucessfully added query \"%s\" for crawl job in project '%s." %(job['query'], job['name'])
 			#update crawl_job query
 		elif job['scope'] == "k":
 			if has_job is None:
@@ -222,7 +222,7 @@ class Scheduler(object):
 			return os.spawnl(os.P_DETACH, a.run())	
 		elif job['action'] == "start":
 			has_job = self.collection.find_one({"name": job['name'], "action":"crawl"})
-			if has_job:
+			if has_job is not None:
 				c = CrawlJob(has_job)
 				return c.run()
 				#return os.spawnl(os.P_NOWAIT, c.run())
