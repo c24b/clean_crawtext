@@ -24,7 +24,7 @@ adblock = Filter(file('easylist.txt'))
 
 class Page():
 	'''Page factory'''
-	def __init__(self, url, query):
+	def __init__(self, url, query= ""):
 		self.url = url
 		self.query = query
 		self.crawl_date = datetime.datetime.now()
@@ -32,10 +32,9 @@ class Page():
 			if self.request():
 				if self.control():
 					if self.extract():
-						print self.info
+						return self.info
 		else:
-			
-			print self.bad_status()
+			return self.bad_status()
 	
 	def check(self):
 		'''Bool: check the format of the next url compared to curr url'''
@@ -160,23 +159,24 @@ class Page():
 					
 	def is_relevant(self):
 		'''Bool Decide if page is relevant and match the correct query. Reformat the query properly: supports AND, OR and space'''
-		self.query = re.sub('-', ' ', self.query) 
-		if 'OR' in self.query:
-			for each in self.query.split('OR'):
-				query4re = each.lower().replace(' ', '.*')
-				if re.search(query4re, self.article, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE):
-					self.status = True
-					self.error_code = 0
-					self.error_type = None
-					return True
+		if self.query is not None:
+			self.query = re.sub('-', ' ', self.query) 
+			if 'OR' in self.query:
+				for each in self.query.split('OR'):
+					query4re = each.lower().replace(' ', '.*')
+					if re.search(query4re, self.article, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE):
+						self.status = True
+						self.error_code = 0
+						self.error_type = None
+						return True
 
-		elif 'AND' in self.query:
-			query4re = self.query.lower().replace(' AND ', '.*').replace(' ', '.*')
-			return bool(re.search(query4re, self.article, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE))
-		#here add NOT operator
-		else:
-			query4re = self.query.lower().replace(' ', '.*')
-			return bool(re.search(query4re, self.article, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE))
+			elif 'AND' in self.query:
+				query4re = self.query.lower().replace(' AND ', '.*').replace(' ', '.*')
+				return bool(re.search(query4re, self.article, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE))
+			#here add NOT operator
+			else:
+				query4re = self.query.lower().replace(' ', '.*')
+				return bool(re.search(query4re, self.article, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE))
 	
 	def filter(self):
 		if self.is_relevant():
