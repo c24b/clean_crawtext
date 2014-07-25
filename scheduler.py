@@ -123,38 +123,38 @@ class Scheduler(object):
 	def set_sources(self, job):
 		print "update crawl_job sources"
 		if job['option'] == "set":
-			self.collection.update({"name": job['name'], 'action': 'crawl'}, {"$set":{"file": job.file}})
-			return "Sucessfully added file '%s' to configure seeds for crawl job of project '%s'"%(job.file, job.name)
+			self.collection.update({"name": job['name'], 'action': 'crawl'}, {"$set":{"file": job['file']}})
+			return "Sucessfully added file '%s' to configure seeds for crawl job of project '%s'"%(job['file'], job['name'])
 		elif job['option'] == "append":
-			print "sources.db add file urls to sources"
+			
 			
 			c = CrawlJob(job)
 			if c.get_local(job['file']) is True:
-				self.collection.update({"name": job['name'], 'action': 'crawl'}, {"$set":{"file": job.file}})
-				return "Sucessfully added urls of file '%s' in sources db for crawl job of project '%s'"%(job.file, job.name)
+				self.collection.update({"name": job['name'], 'action': 'crawl'}, {"$set":{"file": job['file']}})
+				return "Sucessfully added urls of file '%s' in sources db for crawl job of project '%s'"%(job['file'], job['name'])
 			else:
 				return c.error_type
 			#self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file},"$push":{"option": job['option']}})
 			
-		elif job['option'] == "extend":
-			print "sources.db add results to sources"
+		elif job['option'] == "expand":
 			c = CrawlJob(job)
 			c.extend()
 			#make results automatically being inserted in sources at the beginning
 			self.collection.update({"name": job['name'], 'action': 'crawl'},{"$set":{"option": job['option']}})
-			return "Sucessfully configured automatic extension of seeds for crawl job of project '%s'" %job.name
+			return "Sucessfully configured automatic extension of seeds for crawl job of project '%s'" %job['name']
 		elif job['option'] == "add":
 			c = CrawlJob(job)
 			c.insert_url(job['url'], "manual")
-			return "Sucessfully inserted %s to seeds in crawl job of project '%s'" %(job.url, job.name)
-		else:
-			#job['option'] == delete
-			if job.url is not None:
+			return "Sucessfully inserted %s to seeds in crawl job of project '%s'" %(job['url'], job['name'])
+		elif job['option'] == "delete":
+			if job['url'] is not None:
 				c = CrawlJob(job)
 				return c.delete_url(job['url'])
 			else:
 				c = CrawlJob(job)
 				return c.delete()
+		else:
+			pass
 	def update_crawl(self, job):
 		job['action'] = "crawl"
 		job['start_date'] = datetime.today() 
