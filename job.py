@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import re
+import os
 from validate_email import validate_email
 from datetime import datetime
 from utils import yes_no
@@ -9,7 +10,8 @@ from database import *
 import requests
 from page import Page
 import sys
-		
+from multiprocessing import Pool
+import subprocess
 class CrawlJob(object):
 	def __init__(self, job): 
 		for k,v in job.items():
@@ -222,19 +224,19 @@ class CrawlJob(object):
 	
 class ReportJob(object):
 	def __init__(self, doc):
-		print "Report Job"
+		
 		self.date = datetime.now()
 		for k, v in doc.items():
 			setattr(self,k,v) 	
 		self.db = Database(self.name)
 		
 	def run(self):
-		print "Report for %s" %self.name
+		print "Report for crawl results of %s" %self.name
 		filename = "Report_%s_%d-%d-%d-%d:%d.txt" %(self.name, self.date.year, self.date.month, self.date.day,self.date.hour, self.date.minute)
 		with open(filename, 'a') as f:
 			f.write((self.db.stats()).encode('utf-8'))
-		print "Successfully generated report for %s\n Report name is %s and stored in current directory" %(self.name, filename)
-		return self	
+		return "Successfully generated report for %s\nReport name is %s and stored in current directory" %(self.name, filename)
+		
 		
 class ArchiveJob(object):
 	def __init__(self, doc):
@@ -251,7 +253,15 @@ class ExportJob(object):
 		for k, v in doc.items():
 			setattr(self,k,v) 	
 	def run(self):
-		print "Exporting %s" %self.name
+		print "Exporting data from", self.name
+		
+		for n in ['sources', 'results', 'logs']:
+			c = "mongoexport -d %s -c %s --jsonArray -o Export_%s_%s.json"%(self.name,n, self.name, n)	
+			print "- exporting %s" %(n)
+			subprocess.call(c.split(" "), stdout=open(os.devnull, 'wb'))
+		return "Sucessfully exported data project %s in json file" %self.name
+		#subprocess.call(['zip', +zipf+".zip", s.local_filename])
+		#print "Exporting %s" %self.name
 		
 		
 		

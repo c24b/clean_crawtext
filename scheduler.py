@@ -9,7 +9,7 @@ from abc import ABCMeta, abstractmethod
 import docopt
 from utils import *
 from datetime import datetime
-from job import CrawlJob
+from job import *
 
 class Scheduler(object):
 	''' main access to Job Database'''
@@ -205,16 +205,21 @@ class Scheduler(object):
 			return self.set_sources(job)
 	def activate(self, job):
 		#action_list = ["report", "extract", "export", "archive", "start", "delete"]
-		if job['action'] = "delete":
-			self.collection.remove({"name": job['name'])
+		if job['action'] == "delete":
+			self.collection.remove({"name": job['name']})
 			return "%s has been sucessfully deleted. Results and logs are saved in the database of the project.\nTo see stats type:\n\t python crawtext.py %s report" %(job['name'], job['name'])
-		elif job['action'] = "report":
+		elif job['action'] == "report":
 			r = ReportJob(job)
-			r.run()
-		elif job['action'] = "export":
-		elif job['action'] = "start":
+			return r.run()
+		elif job['action'] == "export":
+			e = ExportJob(job)
+			return e.run()
+		elif job['action'] == "start":
+			return "Starting job"
 			#os.spawnl(os.P_DETACH, 'some_long_running_command')	
-									
+		else:
+			self.collection.insert(job)
+			return "Sucessfully scheduled %s on %s" %(job['action'], job['name'])
 	def schedule(self, user_input):
 		job = self.create_from_ui(user_input)
 		
@@ -226,9 +231,7 @@ class Scheduler(object):
 			del job['repeat']
 			del job['data']
 			del job['option']
-			self.collection.insert(job)
-			self.activate(job)
-			return "Sucessfully scheduled %s on %s" %(job['action'], job['name'])
+			return self.activate(job)
 		#udpate
 		elif len(job['scope']) == 1:
 			
