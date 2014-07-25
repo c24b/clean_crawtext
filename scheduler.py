@@ -292,26 +292,14 @@ class Scheduler(object):
 			for job in project_list:
 				
 				for k,v in job.items():
-					if k == ['_id']:
+					if k == '_id':
 						continue
 					if v is not False or v is not None:
 						print k, v
 				print "====================="		
 			return "*******************************************" 			
 		
-	def show_by(self, doc , by="name"):
-		project_list = self.get_list({str(by): doc[str(by)]})
-		if project_list is not None:
-			print "******\tProject %s: %s    ******" %(str(by), str(doc[by]))
-			for job in project_list:
-				print job["action"]
-				for k, v in job.items():
-					if k not in ['_id']:
-						if v is not False or v is not None:
-							print "*\t-", k,'\t', v
-			return "*******************************************"
-		
-
+	
 	def run_job(self, job_name=None):
 		'''Execute tasks from Job Database'''
 		if job_name is None:
