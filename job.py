@@ -79,15 +79,13 @@ class CrawlJob(object):
 			return "'%s' has been deleted from seeds" %url
 		else:
 			return "url %s was not in sources. Check url format" %url
-		
-			
+					
 	def delete(self):
 		self.db.sources.drop()
-		return 'Every single seed has been deleted. No way back!'		
+		return 'Every single seed has been deleted. No way back!...Unless you configure seeds again.\nType python crawtext.py --h for options'		
+		
 	def collect_sources(self):
 		''' Method to add new seed to sources and send them to queue if sourcing is deactivate'''
-
-
 		try:
 			if self.file is not None:
 				print "Getting local urls"
