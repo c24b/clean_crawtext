@@ -43,32 +43,23 @@ class CrawlJob(object):
 		except Exception as e:
 			self.status_code = -2
 			self.error_type = "Error fetching results from BING API.\nError is : \"%s\".\nCheck your API key then check your credentials: number of calls may not exceed 5000req/month" %e.args
-			self.db.logs.insert({"status_code":self.status_code,"error_type": self.error_type})
+			self.db.logs.insert({"status_code":self.status_code,"error_type": self.error_type, "key":key, "query": query})
 			return False
 
-	def get_local(self):
+	def get_local(self, afile = ""):
 		''' Method to extract url list from text file'''
 		try:
-			for url in open(self.file).readlines():
+			for url in open(afile).readlines():
 				url = re.sub("\n", "", url)
-				self.insert_url(url, origin=self.file)
+				self.insert_url(url, origin=afile)
 			return True
 		except Exception:
-
-
 			self.status_code = -2
 			self.error_type = "Error fetching results from file: %s.\nFile doesn't not exists or has a wrong name.\nPlease set up a correct filename:\n\t crawtext.py %s -s append your_sources_file.txt" %(self.filename, self.name)
-			self.status = False
-
-
-
-			self.status_code = -1
-			self.error_type = "Error fetching results from file: %s.\n>>> Check if file exists" %self.file
-			print self.error_type
-
+			self.db.logs.insert({"status_code":self.status_code,"error_type": self.error_type, "file": afile})
 			return False
 	
-	def expand(self):
+	def extend(self):
 		'''Expand sources url adding results urls collected from previous crawl'''
 		for url in self.db.results.distinct("url"):
 			if url not in self.db.sources.find({"url": url}):
@@ -82,13 +73,15 @@ class CrawlJob(object):
 			return self.db.sources.update({"url":url,"origin":origin, "$push": {"date":datetime.today()}})
 		
 	
-	def delete_url(self, url, origin="default"):
+	def delete_url(self, url):
 		if url not in self.db.sources.find({"url": url}):
-				print "url %s was not in sources. Check url format" %url
+			return "url %s was not in sources. Check url format" %url
 		else:
 			self.db.sources.remove({"url":url})
-		return
-			
+			return "'%s' has been deleted from seeds" %url
+	def delete(self):
+		self.db.sources.drop()
+		return 'Every single seed has been deleted. No way back!'		
 	def collect_sources(self):
 		''' Method to add new seed to sources and send them to queue if sourcing is deactivate'''
 

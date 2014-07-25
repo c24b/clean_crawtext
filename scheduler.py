@@ -119,30 +119,42 @@ class Scheduler(object):
 					self.collection.update({"_id": doc['_id']}, {"$set":{"repeat":job['repeat']}})
 					#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
 				return "Every job of the project '%s' will be executed %s."%(job['name'], job['repeat'])
-			
-	def update_sources(self, job):
+	
+	def set_sources(self, job):
 		print "update crawl_job sources"
 		if job['option'] == "set":
-			print job['file']
-			#self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file}, "$set":{"option":[]}})
+			self.collection.update({"name": job['name'], 'action': 'crawl'}, {"$set":{"file": job.file}})
+			return "Sucessfully added file '%s' to configure seeds for crawl job of project '%s'"%(job.file, job.name)
 		elif job['option'] == "append":
 			print "sources.db add file urls to sources"
-			print job['file']
+			
+			c = CrawlJob(job)
+			if c.get_local(job['file']) is True:
+				self.collection.update({"name": job['name'], 'action': 'crawl'}, {"$set":{"file": job.file}})
+				return "Sucessfully added urls of file '%s' in sources db for crawl job of project '%s'"%(job.file, job.name)
+			else:
+				return c.error_type
 			#self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file},"$push":{"option": job['option']}})
+			
 		elif job['option'] == "extend":
 			print "sources.db add results to sources"
+			c = CrawlJob(job)
+			c.extend()
 			#make results automatically being inserted in sources at the beginning
-			#self.collection.update({"_id": has_job['_id']},"$push":{"option": job['option']}})
+			self.collection.update({"name": job['name'], 'action': 'crawl'},{"$set":{"option": job['option']}})
+			return "Sucessfully configured automatic extension of seeds for crawl job of project '%s'" %job.name
 		elif job['option'] == "add":
-			print "sources.db add url"
-			print job['url']
+			c = CrawlJob(job)
+			c.insert_url(job['url'], "manual")
+			return "Sucessfully inserted %s to seeds in crawl job of project '%s'" %(job.url, job.name)
 		else:
 			#job['option'] == delete
 			if job.url is not None:
-				print job['url']
-				print "sources.db delete url	"
+				c = CrawlJob(job)
+				return c.delete_url(job['url'])
 			else:
-				print "sources.db drop	"
+				c = CrawlJob(job)
+				return c.delete()
 	def update_crawl(self, job):
 		job['action'] = "crawl"
 		job['start_date'] = datetime.today() 
@@ -164,7 +176,6 @@ class Scheduler(object):
 				return "Sucessfully added query \"%s\" for crawl job in project '%s'\nA crawl job needs a query and seeds (Bing API key or/and a set of urls) to be active.\n\n See crawtext.py --help on how to activate the crawl adding seeds" %(job['query'], job['name'])
 			#update crawl_job query
 		elif job['scope'] == "k":
-			
 			if has_job is None:
 				del job['repeat']
 				del job['user']
@@ -177,9 +188,9 @@ class Scheduler(object):
 				return "A default crawl job for project '%s' has been successfully created and scheduled with key \"%s\" \n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'],job['key'], job['name'])
 			else:
 				if job['option'] == "append":
-					
+					#make first search and push it to sources using CrawlJob.get_bing()
 					self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job['key']}})
-					#make first search and push it to sources adding a special method from CrawlJob search seeds
+					
 					c = CrawlJob(job)
 					try:
 						if c.get_bing(key = job['key'], query = has_job['query']) is True:
@@ -191,13 +202,11 @@ class Scheduler(object):
 				else:		
 					#job.option == "set":	
 					self.collection.update({"_id": has_job['_id']}, {"$set":{"key": job['key']}})
-					#"$push":{"update_sources":datetime.today()}
-					return "Sucessfully added key \"%s\" for crawl job in project '%s'\nA crawl job needs a query and seeds to be active.\n\nSee crawtext.py --help on how to activate the crawl adding a query" %(job['key'], job['name'])
-				
-				
-				
+					return "Sucessfully added key \"%s\" for crawl job in project '%s'\nA crawl job needs a query and seeds to be active.\n\nSee crawtext.py --help on how to activate the crawl adding a query" %(job['key'], job['name'])			
 		else:#job.scope == "s"
-			return self.udpate_sources(job)
+			return self.set_sources(job)
+			
+	
 					
 	def schedule(self, user_input):
 		job = self.create_from_ui(user_input)
@@ -225,10 +234,10 @@ class Scheduler(object):
 				 
 			#udpate crawl
 			else:
-				del job['scope']
 				del job['repeat']
 				del job['data']
 				job['option'], = job['option']
+				job['scope'], = job['scope']
 				return self.update_crawl(job)
 		#create or show
 		else:
@@ -267,20 +276,17 @@ class Scheduler(object):
 	
 	def get_list(self, project_name=None):
 		'''get all the current job'''		
-		
 		if project_name is None:
 			return [n for n in self.collection.find()]
 		elif type(project_name) == dict:
 			project_list = [n for n in self.collection.find(project_name)]
 			if len(project_list)> 0:
-				#print "*** Project %s: %s ****" %(project_name.keys(), project_name.values())
 				return project_list
 			else:
 				return None
 		elif type(project_name) == str:
 			project_list = [n for n in self.collection.find({"name":project_name})]
 			if len(project_list)> 0:
-				#print "*** Project %s: %s ****" %(project_name.keys(), project_name.values())
 				return project_list
 		else:
 			return None
