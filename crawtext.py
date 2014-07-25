@@ -9,8 +9,8 @@ Usage:
 	crawtext.py archive [ -f (default|wiki|forum) ] <url>
 	crawtext.py <name>
 	crawtext.py <user>
-	crawtext.py report <name>
-	crawtext.py export <name>
+	crawtext.py report <name> 
+	crawtext.py export <name> 
 	crawtext.py delete <name>
 	crawtext.py start <name>
 	crawtext.py <name> -u <email>
@@ -48,7 +48,7 @@ Options:
 	# pour supprimer une source :					crawtext.py pesticides -s delete www.latribune.fr
 	# pour supprimer toutes les sources :			crawtext.py pesticides -s delete
 	Récurrence
-	# pour définir la récurrence :                	crawtext.py pesticides -r monthly|weekly|daily
+	# pour définir la récurrence :                	crawtext.py pesticides -r (monthly|weekly|daily)
 	Executer un projet								crawtext.py run pesticides
 	
 '''
@@ -72,5 +72,5 @@ if __name__== "__main__":
 		#~ else:
 			
 	s = Scheduler()
-	s.schedule(docopt(__doc__))
+	print s.schedule(docopt(__doc__))
 	
