@@ -209,6 +209,8 @@ class Scheduler(object):
 			self.collection.remove({"name": job['name'])
 			return "%s has been sucessfully deleted. Results and logs are saved in the database of the project.\nTo see stats type:\n\t python crawtext.py %s report" %(job['name'], job['name'])
 		elif job['action'] = "report":
+			r = ReportJob(job)
+			r.run()
 		elif job['action'] = "export":
 		elif job['action'] = "start":
 			#os.spawnl(os.P_DETACH, 'some_long_running_command')	

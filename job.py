@@ -233,7 +233,7 @@ class ReportJob(object):
 		filename = "Report_%s_%d-%d-%d-%d:%d.txt" %(self.name, self.date.year, self.date.month, self.date.day,self.date.hour, self.date.minute)
 		with open(filename, 'a') as f:
 			f.write((self.db.stats()).encode('utf-8'))
-		print "Successfully generated report for %s" %self.name 	
+		print "Successfully generated report for %s\n Report name is %s and stored in current directory" %(self.name, filename)
 		return self	
 		
 class ArchiveJob(object):
@@ -254,10 +254,5 @@ class ExportJob(object):
 		print "Exporting %s" %self.name
 		
 		
-#~ class RunJob(Job):
-	#~ def __init__(self, doc):
-		#~ self.date = datetime.now()
-		#~ for k, v in doc.items():
-			#~ setattr(self,k,v) 	
 		
 
