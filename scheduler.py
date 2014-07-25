@@ -65,6 +65,9 @@ class Scheduler(object):
 			has_job = self.get_one({"name": job['name']})
 			if has_job is None:
 				job['action'] = "crawl"
+				job['file'] = None
+				job['key'] = None
+				job['query'] = None
 				job['start_date'] = datetime.today()
 				self.collection.insert(job)
 				return "Project %s has been successfully created and scheduled!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'],job['name'])			
