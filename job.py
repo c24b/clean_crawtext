@@ -74,11 +74,13 @@ class CrawlJob(object):
 		
 	
 	def delete_url(self, url):
-		if url not in self.db.sources.find({"url": url}):
-			return "url %s was not in sources. Check url format" %url
-		else:
+		if self.db.sources.find_one({"url": url}) is not None:
 			self.db.sources.remove({"url":url})
 			return "'%s' has been deleted from seeds" %url
+		else:
+			return "url %s was not in sources. Check url format" %url
+		
+			
 	def delete(self):
 		self.db.sources.drop()
 		return 'Every single seed has been deleted. No way back!'		

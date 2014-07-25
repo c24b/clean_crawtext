@@ -121,13 +121,11 @@ class Scheduler(object):
 				return "Every job of the project '%s' will be executed %s."%(job['name'], job['repeat'])
 	
 	def set_sources(self, job):
-		print "update crawl_job sources"
+		
 		if job['option'] == "set":
 			self.collection.update({"name": job['name'], 'action': 'crawl'}, {"$set":{"file": job['file']}})
 			return "Sucessfully added file '%s' to configure seeds for crawl job of project '%s'"%(job['file'], job['name'])
 		elif job['option'] == "append":
-			
-			
 			c = CrawlJob(job)
 			if c.get_local(job['file']) is True:
 				self.collection.update({"name": job['name'], 'action': 'crawl'}, {"$set":{"file": job['file']}})
@@ -144,13 +142,13 @@ class Scheduler(object):
 			return "Sucessfully configured automatic extension of seeds for crawl job of project '%s'" %job['name']
 		elif job['option'] == "add":
 			c = CrawlJob(job)
-			c.insert_url(job['url'], "manual")
+			print c.insert_url(job['url'], "manual")
 			return "Sucessfully inserted %s to seeds in crawl job of project '%s'" %(job['url'], job['name'])
 		elif job['option'] == "delete":
-			if job['url'] is not None:
+			try:
 				c = CrawlJob(job)
 				return c.delete_url(job['url'])
-			else:
+			except KeyError:
 				c = CrawlJob(job)
 				return c.delete()
 		else:
@@ -205,14 +203,12 @@ class Scheduler(object):
 					return "Sucessfully added key \"%s\" for crawl job in project '%s'\nA crawl job needs a query and seeds to be active.\n\nSee crawtext.py --help on how to activate the crawl adding a query" %(job['key'], job['name'])			
 		else:#job.scope == "s"
 			return self.set_sources(job)
-			
-	
-					
+							
 	def schedule(self, user_input):
 		job = self.create_from_ui(user_input)
 		
 		#schedule		
-		if len(job['action']) == 1:
+		if len(job['action']) == 1 and len(job['scope']) == 0:
 			job['action'], = job['action']
 			job['start_date'] = datetime.now()
 			del job['scope']
