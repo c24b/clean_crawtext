@@ -99,9 +99,6 @@ class CrawlJob(object):
 			
 		except Exception as e:
 			print ">>>> collecting source error:", e
-
-
-
 		if self.query is not None:
 			if self.filename is not None:
 				print self.filename
@@ -112,10 +109,6 @@ class CrawlJob(object):
 			#~ if self.expand is True:
 				#~ self.expand()
 		else:
-
-
-
-
 			return False
 		
 	def send_seeds_to_queue(self):
@@ -166,8 +159,6 @@ class CrawlJob(object):
 		else:
 			pass
 			
-		
-
 		if self.query is not None:
 			if self.filename is not None or self.key is not None:
 				self.collect_sources()
@@ -190,12 +181,6 @@ class CrawlJob(object):
 			else:
 				print "No query search has been configured for crawl project\nPlease provide a query expression:\tcrawtext.py %s -q \"your_query_expression\""
 			
-	def run(self):
-		if self.f is True or self.q is True:
-			self.activate()
-		else:
-
-			print "Crawler has 2 required values: a Query and a sources collection (created by giving urls, or search API key"
 		#~ self.activate()
 
 		#~ start = datetime.now()

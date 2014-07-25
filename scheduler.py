@@ -214,16 +214,24 @@ class Scheduler(object):
 		elif job['action'] == "export":
 			e = ExportJob(job)
 			return e.run()
+		elif job['action'] == "archive":
+			a = ArchiveJob(job)
+			return os.spawnl(os.P_DETACH, a.run())	
 		elif job['action'] == "start":
-			return "Starting job"
-			#os.spawnl(os.P_DETACH, 'some_long_running_command')	
+			has_job = self.collection.find_one({"name": job['name'], "action":"crawl"})
+			if has_job:
+				c = CrawlJob(has_job)
+				c.run()
+				#return os.spawnl(os.P_NOWAIT, c.run())
+			else:
+				return "Job project not properly configured.\n Type python crawtext.py %s to see parameters" %self.name
 		else:
 			self.collection.insert(job)
 			return "Sucessfully scheduled %s on %s" %(job['action'], job['name'])
 	def schedule(self, user_input):
 		job = self.create_from_ui(user_input)
 		
-		#schedule		
+		#activate
 		if len(job['action']) == 1 and len(job['scope']) == 0:
 			job['action'], = job['action']
 			job['start_date'] = datetime.now()
