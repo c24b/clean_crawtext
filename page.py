@@ -28,13 +28,7 @@ class Page():
 		self.url = url
 		self.query = query
 		self.crawl_date = datetime.datetime.now()
-		if self.check():
-			if self.request():
-				if self.control():
-					if self.extract():
-						return self.info
-		else:
-			return self.bad_status()
+		
 	
 	def check(self):
 		'''Bool: check the format of the next url compared to curr url'''
@@ -215,4 +209,11 @@ class Page():
 		else:
 			return None
 				
-			
+	def crawl(self):		
+		if self.check():
+			if self.request():
+				if self.control():
+					if self.extract():
+						return self.__dict__
+		else:
+			return self.bad_status()

@@ -127,8 +127,9 @@ class CrawlJob(object):
 		start = datetime.now()
 		while self.db.queue.count > 0:	
 			for url in self.db.queue.distinct("url"):
-				print url
-				#~ page = Page(url, self.query)
+				#print url
+				page = Page(url, self.query)
+				print page.crawl()
 				#~ if page.status is False:
 					#~ self.db.logs.insert(page.bad_status())
 				#~ else:
