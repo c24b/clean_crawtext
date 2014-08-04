@@ -130,11 +130,14 @@ class Scheduler(object):
 			return "Sucessfully added file '%s' to configure seeds for crawl job of project '%s'"%(job['file'], job['name'])
 		elif job['option'] == "append":
 			c = CrawlJob(job)
-			if c.get_local(job['file']) is True:
-				self.collection.update({"name": job['name'], 'action': 'crawl'}, {"$set":{"file": job['file']}})
-				return "Sucessfully added urls of file '%s' in sources db for crawl job of project '%s'"%(job['file'], job['name'])
-			else:
-				return c.error_type
+			try:
+				if c.get_local(job['file']) is True:
+					self.collection.update({"name": job['name'], 'action': 'crawl'}, {"$set":{"file": job['file']}})
+					return "Sucessfully added urls of file '%s' in sources db for crawl job of project '%s'"%(job['file'], job['name'])
+				else:
+					return c.error_type
+			except AttributeError:
+				return "No file with url found for crawl job of project. Verify that your file exists."
 			#self.collection.update({"_id": has_job['_id']}, {"$set":{"file": job.file},"$push":{"option": job['option']}})
 			
 		elif job['option'] == "expand":

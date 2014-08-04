@@ -1,0 +1,7 @@
+===STATS===
+Stored results in Mongo Database: pesticides22 
+	-Nombre de resultats dans la base: 0
+	-Nombre de sources: 3
+	-urls en cours de traitement: 0
+	-urls traitees: 0
+	-Size of the database pesticides22: 0 MB

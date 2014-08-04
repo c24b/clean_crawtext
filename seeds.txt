@@ -1,2 +1,3 @@
 www.lemonde.fr
-www.Latribune.fr
+www.latribune.fr
+
