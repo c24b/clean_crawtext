@@ -123,13 +123,17 @@ class CrawlJob(object):
 		else:
 			self.send_seeds_to_queue()
 		
-		print "running crawl on %i sources with query '%s'" %(self.db.sources.count(), self.query)
+		print "running crawl on %i sources with query '%s'" %(self.db.sources.distinct("url"), self.query)
 		start = datetime.now()
 		while self.db.queue.count > 0:	
 			for url in self.db.queue.distinct("url"):
 				#print url
 				page = Page(url, self.query)
-				print page.crawl()
+				page.check()
+				if page.status is True:
+					page.request()
+					if page.status is True:
+						print page.src
 				#~ if page.status is False:
 					#~ self.db.logs.insert(page.bad_status())
 				#~ else:

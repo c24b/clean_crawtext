@@ -20,27 +20,31 @@ from abpy import Filter
 
 
 unwanted_extensions = ['css','js','gif','asp', 'GIF','jpeg','JPEG','jpg','JPG','pdf','PDF','ico','ICO','png','PNG','dtd','DTD', 'mp4', 'mp3', 'mov', 'zip','bz2', 'gz', ]	
-adblock = Filter(file('easylist.txt'))
+adblock = Filter(file('./ressources/easylist.txt'))
 
-class Page():
+class Page(object):
 	'''Page factory'''
 	def __init__(self, url, query= ""):
 		self.url = url
 		self.query = query
 		self.crawl_date = datetime.datetime.now()
+		self.error_type = "Ok"
+		self.status = None
 		
-	
 	def check(self):
 		'''Bool: check the format of the next url compared to curr url'''
 		if self.url is None or len(self.url) <= 1 or self.url == "\n":
 			self.error_type = "Url is empty"
 			self.status = False
-			return False
 		elif (( self.url.split('.')[-1] in unwanted_extensions ) and ( len( adblock.match(self.url) ) > 0 ) ):
 			self.error_type="Url has not a proprer extension or page is an advertissement"
-			return False
+			self.status = False
 		else:
-			return True
+			self.scheme = urlparse(self.url).scheme
+			if self.scheme == "":
+				self.url = "http://"+self.url
+			self.status = True
+		return self.status
 		
 	def request(self):
 		'''Bool request a webpage: return boolean and update src'''
@@ -55,33 +59,34 @@ class Page():
 				try:
 					self.src = self.req.text
 					self.status = True
-					return True
+					
 				except Exception, e:
 					self.error_type = "Request answer was not understood %s" %e
 					self.status_code = 400
 					self.status = False
-					return False
+					
 				else:
 					self.error_type = "Not relevant"
 					self.status_code = 0
 					self.status = False
-					return False
+					
 			except Exception, e:
 				#print "Error requesting the url", e
 				self.error_type = "Request answer was not understood %s" %e
 				self.status_code = 400
 				self.status = False
-				return False
+				
 		except requests.exceptions.MissingSchema:
 			self.error_type = "Incorrect url - Missing sheme for : %s" %self.url
 			self.status_code = 406
 			self.status = False
-			return False
+			
 		except Exception as e:
 			self.error_type = "Another wired exception: %s %s" %(e, e.args)
 			self.status_code = 204
 			self.status = False
-			return False
+			
+		return self.status
 		
 	def control(self):
 		'''Bool control the result if text/html or if content available'''
@@ -92,13 +97,13 @@ class Page():
 				self.error_type="Content type is not TEXT/HTML"
 				self.status_code = 404
 				self.status = False
-				return False
+				
 			#Error on ressource or on server
 			elif self.req.status_code in range(400,520):
 				self.status_code = self.req.status_code
 				self.error_type="Connexion error"
 				self.status = False
-				return False
+				
 			#Redirect
 			#~ elif len(self.req.history) > 0 | self.req.status_code in range(300,320): 
 				#~ self.error_type="Redirection"
@@ -106,12 +111,12 @@ class Page():
 				#~ return False
 			else:
 				self.status = True
-				return True	
+		#Headers problems		
 		except Exception:
 			self.error_type="Request headers are not found"
 			self.status_code = 403
 			self.status = False
-			return False		
+		return self.status	
 		
 	def extract(self):
 		'''Dict extract content and info of webpage return boolean and self.info'''	
@@ -214,6 +219,6 @@ class Page():
 			if self.request():
 				if self.control():
 					if self.extract():
-						return self.__dict__
+						print self.__dict__
 		else:
-			return self.bad_status()
+			print self.bad_status()
