@@ -101,7 +101,7 @@ class Page(object):
 			#Error on ressource or on server
 			elif self.req.status_code in range(400,520):
 				self.status_code = self.req.status_code
-				self.error_type="Connexion error"
+				self.error_type="Request error on connexion no ressources or not able to reach server"
 				self.status = False
 				
 			#Redirect
@@ -113,7 +113,7 @@ class Page(object):
 				self.status = True
 		#Headers problems		
 		except Exception:
-			self.error_type="Request headers are not found"
+			self.error_type="Request headers were not found"
 			self.status_code = 403
 			self.status = False
 		return self.status	
@@ -128,7 +128,7 @@ class Page(object):
 			self.title = bs(self.src).title
 			#~ #filtering relevant webpages
 			self.target_urls = set()
-			if self.filter():
+			if self.filter() is True:
 				for e in bs(self.src).find_all('a', {'href': True}):
 					print e.attrs['href']
 					target_url = self.clean_url(url=e.attrs['href'])
@@ -148,13 +148,16 @@ class Page(object):
 							#"meta_description":bs(self.article.meta_description).text,
 							"date": [self.crawl_date]
 							}
-				return True	
-		
+				self.status = True
+					
+			else:
+				return self.status
+				
 		except Exception, e:
 			self.error_type = str(e)
 			self.status_code = -2
 			self.status = False
-			return False
+		return self.status
 					
 	def is_relevant(self):
 		'''Bool Decide if page is relevant and match the correct query. Reformat the query properly: supports AND, OR and space'''
@@ -179,12 +182,12 @@ class Page(object):
 	
 	def filter(self):
 		if self.is_relevant():
-			return True
+			self.status = True
 		else:
 			self.error_type = "Not relevant"
-			self.status_code = -1
+			self.status_code = 0
 			self.status = False
-			return False
+		return self.status	
 						 	
 	def bad_status(self):
 		'''create a msg_log {"url":self.url, "error_code": self.req.status_code, "error_type": self.error_type, "status": False,"date": self.crawl_date}'''			

@@ -93,11 +93,14 @@ class CrawlJob(object):
 		''' Method to add new seed to sources and send them to queue if sourcing is deactivate'''
 		
 		if self.option == "expand":
-				self.expand()
+			print "Automatically expanding sources from last results"
+			self.expand()
 		if self.file is not None:
 			print "Getting seeds from file %s" %self.file
 			self.get_local(self.file)
-		
+		else:
+			print "Getting seeds from file is deactivated. No file with seeds url has been foud. Please set up a file with url if you want to add multiple urls."
+			
 		if self.query is not None:
 			print "Getting seeds from Bing results on search %s" %self.query
 			if self.key is not None:
@@ -135,7 +138,11 @@ class CrawlJob(object):
 				if page.status is True:
 					page.request()
 					if page.status is True:
-						print page.src
+						page.extract()
+						if page.status is False:
+							print self.error_type
+						else:
+							print self.title
 				#~ if page.status is False:
 					#~ self.db.logs.insert(page.bad_status())
 				#~ else:
