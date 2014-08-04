@@ -12,6 +12,7 @@ from page import Page
 import sys
 from multiprocessing import Pool
 import subprocess
+
 class CrawlJob(object):
 	def __init__(self, job): 
 		self.option = None
@@ -42,13 +43,14 @@ class CrawlJob(object):
 					)
 			for e in r.json()['d']['results']:
 				self.insert_url(e["Url"],origin="bing")
-			return True
+			self.status = True
 		except Exception as e:
 			self.status_code = -2
 			self.error_type = "Error fetching results from BING API.\nError is : \"%s\".\nCheck your API key then check your credentials: number of calls may not exceed 5000req/month" %e.args
 			self.db.logs.insert({"status_code":self.status_code,"error_type": self.error_type, "key":key, "query": query})
-			return False
-
+			self.status = False
+		return self.status
+		
 	def get_local(self, afile = ""):
 		''' Method to extract url list from text file'''
 		try:
