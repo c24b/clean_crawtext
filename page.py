@@ -29,21 +29,25 @@ class Page(object):
 		self.query = query
 		self.crawl_date = datetime.datetime.now()
 		self.error_type = "Ok"
-		self.status = None
+		self.status = "Ok"
+		self.status_code = 0
 		
 	def check(self):
 		'''Bool: check the format of the next url compared to curr url'''
 		if self.url is None or len(self.url) <= 1 or self.url == "\n":
 			self.error_type = "Url is empty"
 			self.status = False
+			self.status_code = 406
 		elif (( self.url.split('.')[-1] in unwanted_extensions ) and ( len( adblock.match(self.url) ) > 0 ) ):
 			self.error_type="Url has not a proprer extension or page is an advertissement"
 			self.status = False
+			self.status_code = 406
 		else:
 			self.scheme = urlparse(self.url).scheme
 			if self.scheme == "":
 				self.url = "http://"+self.url
 			self.status = True
+			self.status_code = 200
 		return self.status
 		
 	def request(self):
@@ -59,15 +63,11 @@ class Page(object):
 				try:
 					self.src = self.req.text
 					self.status = True
+					self.status = 200
 					
 				except Exception, e:
 					self.error_type = "Request answer was not understood %s" %e
 					self.status_code = 400
-					self.status = False
-					
-				else:
-					self.error_type = "Not relevant"
-					self.status_code = 0
 					self.status = False
 					
 			except Exception, e:
@@ -125,33 +125,29 @@ class Page(object):
 			#print "extracting..."
 			self.url = self.clean_url(self.url)
 			self.article = bs(self.src).text
-			self.title = bs(self.src).title
+			self.title = bs(self.src).title.text
 			#~ #filtering relevant webpages
 			self.target_urls = set()
-			if self.filter() is True:
-				for e in bs(self.src).find_all('a', {'href': True}):
-					print e.attrs['href']
-					target_url = self.clean_url(url=e.attrs['href'])
-					if target_url is not None:
-						self.target_urls.append(target_url)
-					else:
-						continue
-				self.info = {	
-							"source_url":self.url,
-							"query": self.query,
-							"source_domain": get_tld(self.url),
-							"target_urls": list(self.target_urls),
-							"target_domains": [get_tld(n) for n in self.outlinks],
-							#"texte": self.article,
-							"title": self.title,
-							#"html": self.src,
-							#"meta_description":bs(self.article.meta_description).text,
-							"date": [self.crawl_date]
-							}
-				self.status = True
-					
-			else:
-				return self.status
+			#if self.filter() is True:
+			for e in bs(self.src).find_all('a', {'href': True}):
+				#print e.attrs['href']
+				target_url = self.clean_url(url=e.attrs['href'])
+				if target_url is not None:
+					self.target_urls.append(target_url)
+				
+			self.info = {	
+						"source_url":self.url,
+						"query": self.query,
+						"source_domain": get_tld(self.url),
+						"target_urls": list(self.target_urls),
+						"target_domains": [get_tld(n) for n in self.outlinks],
+						"texte": self.article,
+						"title": self.title,
+						"html": self.src,
+						#"meta_description":bs(self.article.meta_description).text,
+						"date": [self.crawl_date]
+						}
+			self.status = True		
 				
 		except Exception, e:
 			self.error_type = str(e)
@@ -185,7 +181,7 @@ class Page(object):
 			self.status = True
 		else:
 			self.error_type = "Not relevant"
-			self.status_code = 0
+			self.status_code = -1
 			self.status = False
 		return self.status	
 						 	

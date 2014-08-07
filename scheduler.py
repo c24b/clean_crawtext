@@ -164,7 +164,6 @@ class Scheduler(object):
 		job['start_date'] = datetime.today() 
 		has_job = self.get_one({"name": job['name'], "action": job['action']})
 		if job['scope'] == "q":
-			
 			if has_job is None:
 				del job['repeat']
 				del job['user']
