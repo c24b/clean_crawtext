@@ -91,7 +91,7 @@ class Article(object):
 		self.backlinks = None
 		self.start_date = datetime.datetime.today()
 
-class Link(object)
+class Link(object):
 	def __init__(self, article, parser, target_language="en", stopwords_class="en"):
 		#~ # parser
 		self.parser = parser
@@ -604,3 +604,23 @@ class ContentExtractor(object):
 
 class StandardContentExtractor(ContentExtractor):
     pass
+
+class ArticleExtractor(object):
+	@staticmethod	
+	def get(self, url, raw_html, target_language="en", stopwords_class="en"):		
+		self.article = Article()
+		self.article.url = url
+		self.article.raw_html = raw_html
+		#init parser here defaut parser
+		self.parser = Parser()
+		self.extractor = StandardContentExtractor(self.article,self.parser, target_language="en", stopwords_class="en")			
+		# init the document cleaner
+		self.cleaner = StandardDocumentCleaner(self.article, self.parser)
+		# init the output formatter
+		self.formatter = StandardOutputFormatter(self.article,self.parser, stopwords_class="en")
+		doc = self.parser.fromstring(raw_html)
+		self.article.final_url = url
+		self.article.raw_html = raw_html
+		self.article.doc = doc
+		self.article.raw_doc = deepcopy(doc)
+		return self.article
