@@ -244,7 +244,7 @@ class Page(object):
 		
 			self.get_article()
 			links = self.extractor.extract_links()
-			print links
+			
 		#~ self.article = bs(self.src).text
 		#~ self.title = bs(self.src).title.text
 		#~ 

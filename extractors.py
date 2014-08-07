@@ -215,6 +215,7 @@ class ContentExtractor(object):
         node = self.article.doc
         select = CSSSelector("a")
         self.links = [ el.get('href') for el in select(node) ]
+        
         return set(self.links)
     
     def extract_outlinks():
