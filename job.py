@@ -138,14 +138,9 @@ class CrawlJob(object):
 				
 				if page.status is True:
 					page.request()
-					print page.status_code
-					if page.status is True:
-						page.extract()
-						print page.status
-						if page.status is False:
-							print page.error_type
-						else:
-							print page.title
+					page.control()
+					page.extract()
+					
 				
 				#~ if page.status is False:
 					#~ self.db.logs.insert(page.bad_status())
