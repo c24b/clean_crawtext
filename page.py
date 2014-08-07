@@ -23,9 +23,10 @@ from parsers import Parser
 from cleaners import StandardDocumentCleaner
 from extractors import StandardContentExtractor
 from formatters import StandardOutputFormatter
-
+#from utils import RawHelper,UrlHelper
 unwanted_extensions = ['css','js','gif','asp', 'GIF','jpeg','JPEG','jpg','JPG','pdf','PDF','ico','ICO','png','PNG','dtd','DTD', 'mp4', 'mp3', 'mov', 'zip','bz2', 'gz', ]	
 adblock = Filter(file('./ressources/easylist.txt'))
+
 class Article(object):
 	'''Article'''
 	def __init__(self):
@@ -192,15 +193,6 @@ class Page(object):
 		return self.status	
 	
 	def get_article(self):		
-		#init parser here defaut parser
-		self.parser = Parser()
-		self.extractor = StandardContentExtractor(self.article,self.parser, target_language="en", stopwords_class="en")			
-		# init the document cleaner
-		self.cleaner = StandardDocumentCleaner(self.article, self.parser)
-		# init the output formatter
-		self.formatter = StandardOutputFormatter(self.article,self.parser, stopwords_class="en")
-
-		#then
 		doc = self.parser.fromstring(self.raw_html)
 		self.article.final_url = self.url
 		self.article.raw_html = self.raw_html
@@ -237,12 +229,22 @@ class Page(object):
 			
 	def extract(self):
 		'''Dict extract content and info of webpage return boolean and self.info'''	
-		#try:
+		try:
 		
-		self.url = self.clean_url(self.url)
-		self.article = Article()
-		self.get_article()
-		print ">>>", self.article.cleaned_text
+			self.url = self.clean_url(self.url)
+			self.article = Article()
+			
+			#init parser here defaut parser
+			self.parser = Parser()
+			self.extractor = StandardContentExtractor(self.article,self.parser, target_language="en", stopwords_class="en")			
+			# init the document cleaner
+			self.cleaner = StandardDocumentCleaner(self.article, self.parser)
+			# init the output formatter
+			self.formatter = StandardOutputFormatter(self.article,self.parser, stopwords_class="en")
+		
+			self.get_article()
+			links = self.extractor.extract_links()
+			print links
 		#~ self.article = bs(self.src).text
 		#~ self.title = bs(self.src).title.text
 		#~ 
@@ -268,14 +270,14 @@ class Page(object):
 					#~ #"meta_description":bs(self.article.meta_description).text,
 					#~ "date": [self.crawl_date]
 					#~ }
-		self.status = True		
-		'''		
+			self.status = True		
+		
 		except Exception, e:
 			print e
 			self.error_type = str(e)
 			self.status_code = -2
 			self.status = False
-		'''
+		
 		return self.status
 					
 	def is_relevant(self):

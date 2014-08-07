@@ -7,6 +7,7 @@ from utils import StringReplacement
 from utils import ReplaceSequence
 from utils import URLHelper, RawHelper
 from utils.text import StopWords
+from lxml.cssselect import CSSSelector
 
 MOTLEY_REPLACEMENT = StringReplacement("&#65533;", "")
 ESCAPED_FRAGMENT_REPLACEMENT = StringReplacement(u"#!", u"?_escaped_fragment_=")
@@ -210,9 +211,9 @@ class ContentExtractor(object):
 
         return set(tags)
     
-    def extract_links():
+    def extract_links(self):
         node = self.article.doc
-        select = cssselect.CSSSelector("a")
+        select = CSSSelector("a")
         self.links = [ el.get('href') for el in select(node) ]
         return set(self.links)
     
