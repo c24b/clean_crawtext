@@ -17,12 +17,8 @@ from urlparse import urlparse
 from random import choice
 from tld import get_tld
 from abpy import Filter
+from extractors import ArticleExtractor
 
-from copy import deepcopy
-from parsers import Parser
-from cleaners import StandardDocumentCleaner
-from extractors import StandardContentExtractor
-from formatters import StandardOutputFormatter
 #from utils import RawHelper,UrlHelper
 unwanted_extensions = ['css','js','gif','asp', 'GIF','jpeg','JPEG','jpg','JPG','pdf','PDF','ico','ICO','png','PNG','dtd','DTD', 'mp4', 'mp3', 'mov', 'zip','bz2', 'gz', ]	
 adblock = Filter(file('./ressources/easylist.txt'))
@@ -123,61 +119,12 @@ class Page(object):
 			self.status_code = 403
 			self.status = False
 		return self.status	
-	
-	def get_article(self):		
-		doc = self.parser.fromstring(self.raw_html)
-		self.article.final_url = self.url
-		self.article.raw_html = self.raw_html
-		self.article.doc = doc
-		self.article.raw_doc = deepcopy(doc)
-		# TODO
-		# self.article.publish_date = config.publishDateExtractor.extract(doc)
-		# self.article.additional_data = config.get_additionaldata_extractor.extract(doc)
-		self.article.title = self.extractor.get_title()
-		self.article.meta_lang = self.extractor.get_meta_lang()
-		self.article.meta_favicon = self.extractor.get_favicon()
-		self.article.meta_description = self.extractor.get_meta_description()
-		self.article.meta_keywords = self.extractor.get_meta_keywords()
-		self.article.canonical_link = self.extractor.get_canonical_link()
-		self.article.domain = self.extractor.get_domain()
-		self.article.tags = self.extractor.extract_tags()
-
-		# before we do any calcs on the body itself let's clean up the document
-		self.article.doc = self.cleaner.clean()
-
-		# big stuff
-		self.article.top_node = self.extractor.calculate_best_node()
-
-		# if we have a top node
-		# let's process it
-		if self.article.top_node is not None:
-            # post cleanup
-			self.article.top_node = self.extractor.post_cleanup()
-
-			# clean_text
-			self.article.cleaned_text = self.formatter.get_formatted_text()
-        # return the article
-		return self.article
-			
 	def extract(self):
 		'''Dict extract content and info of webpage return boolean and self.info'''	
 		try:
-		
 			#self.url = self.clean_url(self.url)
-			self.article = Article()
-			
-			#init parser here defaut parser
-			self.parser = Parser()
-			self.extractor = StandardContentExtractor(self.article,self.parser, target_language="en", stopwords_class="en")			
-			# init the document cleaner
-			self.cleaner = StandardDocumentCleaner(self.article, self.parser)
-			# init the output formatter
-			self.formatter = StandardOutputFormatter(self.article,self.parser, stopwords_class="en")
-			
-			self.get_article()
-			print self.url
-			self.base_url = urlparse(self.url)
-			print self.base_url
+			self.article = ArticleExtractor.run(self.url, self.raw_html, target_language="en", stopwords_class="en")
+			print self.article.canonical_link
 			#~ links = self.extractor.extract_links()
 			#~ for n in links:
 				#~ print n

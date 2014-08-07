@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-import re
+import re, datetime
 from copy import deepcopy
 from urlparse import urlparse, urljoin
 from utils import StringSplitter
@@ -8,6 +8,12 @@ from utils import ReplaceSequence
 from utils import URLHelper, RawHelper
 from utils.text import StopWords
 from lxml.cssselect import CSSSelector
+
+from copy import deepcopy
+from parsers import Parser
+from cleaners import StandardDocumentCleaner
+from formatters import StandardOutputFormatter
+
 
 MOTLEY_REPLACEMENT = StringReplacement("&#65533;", "")
 ESCAPED_FRAGMENT_REPLACEMENT = StringReplacement(u"#!", u"?_escaped_fragment_=")
@@ -90,7 +96,22 @@ class Article(object):
 		self.outlinks = None
 		self.backlinks = None
 		self.start_date = datetime.datetime.today()
-
+	
+	def extract():
+		parser = Parser()
+		extractor = StandardContentExtractor(self.article,self.parser, target_language="en", stopwords_class="en")			
+		# init the document cleaner
+		cleaner = StandardDocumentCleaner(self.article, self.parser)
+		# init the output formatter
+		formatter = StandardOutputFormatter(self.article,self.parser, stopwords_class="en")
+		#
+		doc = parser.fromstring(raw_html)
+		article.final_url = url
+		article.raw_html = raw_html
+		article.doc = doc
+		article.raw_doc = deepcopy(doc)
+		return self.article
+		
 class Link(object):
 	def __init__(self, article, parser, target_language="en", stopwords_class="en"):
 		#~ # parser
@@ -605,22 +626,4 @@ class ContentExtractor(object):
 class StandardContentExtractor(ContentExtractor):
     pass
 
-class ArticleExtractor(object):
-	@staticmethod	
-	def get(self, url, raw_html, target_language="en", stopwords_class="en"):		
-		self.article = Article()
-		self.article.url = url
-		self.article.raw_html = raw_html
-		#init parser here defaut parser
-		self.parser = Parser()
-		self.extractor = StandardContentExtractor(self.article,self.parser, target_language="en", stopwords_class="en")			
-		# init the document cleaner
-		self.cleaner = StandardDocumentCleaner(self.article, self.parser)
-		# init the output formatter
-		self.formatter = StandardOutputFormatter(self.article,self.parser, stopwords_class="en")
-		doc = self.parser.fromstring(raw_html)
-		self.article.final_url = url
-		self.article.raw_html = raw_html
-		self.article.doc = doc
-		self.article.raw_doc = deepcopy(doc)
-		return self.article
+		
