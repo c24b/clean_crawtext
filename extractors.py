@@ -7,6 +7,7 @@ from utils import StringReplacement
 from utils import ReplaceSequence
 from utils import URLHelper, RawHelper
 from utils.text import StopWords
+from utils.url import *
 from lxml.cssselect import CSSSelector
 
 from copy import deepcopy
@@ -30,10 +31,25 @@ RE_LANG = r'^[A-Za-z]{2}$'
 
 class Article(object):
 	'''Article'''
-	def __init__(self):
+	def __init__(self, url, raw_html):
+		#extraction set
+		#init parser here defaut parser
+		
+		
+		self.parser = Parser()
+		self.extractor = StandardContentExtractor(self,self.parser, target_language="en", stopwords_class="en")			
+		# init the document cleaner
+		self.cleaner = StandardDocumentCleaner(self, self.parser)
+		# init the output formatter
+		self.formatter = StandardOutputFormatter(self,self.parser, stopwords_class="en")
+		
+		
+
+		#ARTICLE PROP
+		self.url = url
+		self.final_url = url
 		# title of the article
 		self.title = None
-
 		# stores the lovely, pure text from the article,
 		# stripped of html, formatting, etc...
 		# just raw text with paragraphs separated by newlines.
@@ -68,7 +84,7 @@ class Article(object):
 
 		# stores the final URL that we're going to try
 		# and fetch content against, this would be expanded if any
-		self.final_url = u""
+		self.final_url = url
 
 		# stores the MD5 hash of the url
 		# to use for various identification tasks
@@ -76,15 +92,15 @@ class Article(object):
 
 		# stores the RAW HTML
 		# straight from the network connection
-		self.raw_html = u""
-
+		#self.raw_html = u""
+		self.raw_html = raw_html
 		# the lxml Document object
-		self.doc = None
-
+		self.doc = self.parser.fromstring(self.raw_html)
+		
 		# this is the original JSoup document that contains
 		# a pure object from the original HTML without any cleaning
 		# options done on it
-		self.raw_doc = None
+		self.raw_doc = deepcopy(self.doc)
 
 		# Sometimes useful to try and know when
 		# the publish date of an article was
@@ -97,20 +113,38 @@ class Article(object):
 		self.backlinks = None
 		self.start_date = datetime.datetime.today()
 	
-	def extract():
-		parser = Parser()
-		extractor = StandardContentExtractor(self.article,self.parser, target_language="en", stopwords_class="en")			
-		# init the document cleaner
-		cleaner = StandardDocumentCleaner(self.article, self.parser)
-		# init the output formatter
-		formatter = StandardOutputFormatter(self.article,self.parser, stopwords_class="en")
-		#
-		doc = parser.fromstring(raw_html)
-		article.final_url = url
-		article.raw_html = raw_html
-		article.doc = doc
-		article.raw_doc = deepcopy(doc)
-		return self.article
+	def extract(self):
+		print "extracting"
+		# TODO
+		# self.article.publish_date = config.publishDateExtractor.extract(doc)
+		# self.article.additional_data = config.get_additionaldata_extractor.extract(doc)
+		self.title = self.extractor.get_title()
+		self.meta_lang = self.extractor.get_meta_lang()
+		self.meta_favicon = self.extractor.get_favicon()
+		self.meta_description = self.extractor.get_meta_description()
+		self.meta_keywords = self.extractor.get_meta_keywords()
+		self.canonical_link = self.extractor.get_canonical_link()
+		self.domain = self.extractor.get_domain()
+		self.tags = self.extractor.extract_tags()
+
+		# before we do any calcs on the body itself let's clean up the document
+		self.doc = self.cleaner.clean()
+
+		# big stuff
+		self.top_node = self.extractor.calculate_best_node()
+		# if we have a top node
+		# let's process it
+		if self.top_node is not None:
+            # post cleanup
+			self.top_node = self.extractor.post_cleanup()
+
+			# clean_text
+			self.cleaned_text = self.formatter.get_formatted_text()
+        # return the article
+		self.links = self.extractor.get_outlinks()
+		
+		return self
+		
 		
 class Link(object):
 	def __init__(self, article, parser, target_language="en", stopwords_class="en"):
@@ -317,18 +351,22 @@ class ContentExtractor(object):
 
         return set(tags)
     
-    def extract_links(self):
+    def get_links(self):
         node = self.article.doc
         select = CSSSelector("a")
-        self.links = [ el.get('href') for el in select(node) ]
-        
+        self.links = [ el.get('href') for el in select(node)]
+        self.links = [ n for n in self.links if n is not None or n != ""]
         return set(self.links)
     
-    def extract_outlinks():
-        self.outlinks = None
-        return set(self.outlinks) 
+    def get_outlinks(self):
+		self.get_links()
+		for u in self.links:
+			print u
+			print validate_url(u,self.article.final_url)
+		
+		return set(self.outlinks) 
 
-    def extract_backlinks():
+    def get_backlinks(self):
         self.outlinks = None
         return set(self.outlinks) 
 
@@ -625,5 +663,3 @@ class ContentExtractor(object):
 
 class StandardContentExtractor(ContentExtractor):
     pass
-
-		

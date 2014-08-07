@@ -17,11 +17,10 @@ from urlparse import urlparse
 from random import choice
 from tld import get_tld
 from abpy import Filter
-from extractors import ArticleExtractor
 
-#from utils import RawHelper,UrlHelper
-unwanted_extensions = ['css','js','gif','asp', 'GIF','jpeg','JPEG','jpg','JPG','pdf','PDF','ico','ICO','png','PNG','dtd','DTD', 'mp4', 'mp3', 'mov', 'zip','bz2', 'gz', ]	
-adblock = Filter(file('./ressources/easylist.txt'))
+from extractors import Article
+from utils.url import validate_url
+
 
         
 class Page(object):
@@ -40,10 +39,10 @@ class Page(object):
 			self.error_type = "Url is empty"
 			self.status = False
 			self.status_code = 406
-		elif (( self.url.split('.')[-1] in unwanted_extensions ) and ( len( adblock.match(self.url) ) > 0 ) ):
-			self.error_type="Url has not a proprer extension or page is an advertissement"
+		elif validate_url(self.url) is False:
+			self.error_type="Url has not a proprer extension or page is an advertissement or protocol is incorrect"
 			self.status = False
-			self.status_code = 406
+			self.status_code = 406.1
 		else:
 			self.scheme = urlparse(self.url).scheme
 			if self.scheme == "":
@@ -119,40 +118,16 @@ class Page(object):
 			self.status_code = 403
 			self.status = False
 		return self.status	
+	
+			
 	def extract(self):
 		'''Dict extract content and info of webpage return boolean and self.info'''	
 		try:
+		
 			#self.url = self.clean_url(self.url)
-			self.article = ArticleExtractor.run(self.url, self.raw_html, target_language="en", stopwords_class="en")
-			print self.article.canonical_link
-			#~ links = self.extractor.extract_links()
-			#~ for n in links:
-				#~ print n
-		#~ self.article = bs(self.src).text
-		#~ self.title = bs(self.src).title.text
-		#~ 
-		#~ self.target_urls = set()
-		#~ #if self.filter() is True:
-		#~ for e in bs(self.raw_html).find_all('a', {'href': True}):
-			#~ #print e.attrs['href']
-			#~ print e.attrs['href']
-			#~ if e.attrs['href'] is not None or e.attrs['href'] != "":
-				#~ target_url = self.clean_url(url=e.attrs['href'])
-				#~ if target_url is not None:
-					#~ self.target_urls.append(target_url)
-			#~ 
-		#~ self.info = {	
-					#~ "source_url":self.url,
-					#~ "query": self.query,
-					#~ "source_domain": get_tld(self.url),
-					#~ "target_urls": list(self.target_urls),
-					#~ "target_domains": [get_tld(n) for n in self.outlinks],
-					#~ "texte": self.article,
-					#~ "title": self.title,
-					#~ "html": self.raw_html,
-					#~ #"meta_description":bs(self.article.meta_description).text,
-					#~ "date": [self.crawl_date]
-					#~ }
+			a = Article(self.url, self.raw_html)		
+			self.article = a.extract()
+			self.outlinks = self.article.links
 			self.status = True		
 		
 		except Exception, e:
