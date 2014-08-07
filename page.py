@@ -246,26 +246,28 @@ class Page(object):
 		#~ self.article = bs(self.src).text
 		#~ self.title = bs(self.src).title.text
 		#~ 
-		self.target_urls = set()
-		#if self.filter() is True:
-		for e in bs(self.raw_html).find_all('a', {'href': True}):
-			#print e.attrs['href']
-			target_url = self.clean_url(url=e.attrs['href'])
-			if target_url is not None:
-				self.target_urls.append(target_url)
-			
-		self.info = {	
-					"source_url":self.url,
-					"query": self.query,
-					"source_domain": get_tld(self.url),
-					"target_urls": list(self.target_urls),
-					"target_domains": [get_tld(n) for n in self.outlinks],
-					"texte": self.article,
-					"title": self.title,
-					"html": self.raw_html,
-					#"meta_description":bs(self.article.meta_description).text,
-					"date": [self.crawl_date]
-					}
+		#~ self.target_urls = set()
+		#~ #if self.filter() is True:
+		#~ for e in bs(self.raw_html).find_all('a', {'href': True}):
+			#~ #print e.attrs['href']
+			#~ print e.attrs['href']
+			#~ if e.attrs['href'] is not None or e.attrs['href'] != "":
+				#~ target_url = self.clean_url(url=e.attrs['href'])
+				#~ if target_url is not None:
+					#~ self.target_urls.append(target_url)
+			#~ 
+		#~ self.info = {	
+					#~ "source_url":self.url,
+					#~ "query": self.query,
+					#~ "source_domain": get_tld(self.url),
+					#~ "target_urls": list(self.target_urls),
+					#~ "target_domains": [get_tld(n) for n in self.outlinks],
+					#~ "texte": self.article,
+					#~ "title": self.title,
+					#~ "html": self.raw_html,
+					#~ #"meta_description":bs(self.article.meta_description).text,
+					#~ "date": [self.crawl_date]
+					#~ }
 		self.status = True		
 		'''		
 		except Exception, e:
