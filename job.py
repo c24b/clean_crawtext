@@ -12,7 +12,7 @@ from page import Page
 import sys
 from multiprocessing import Pool
 import subprocess
-
+from utils.url import *
 class CrawlJob(object):
 	def __init__(self, job): 
 		self.option = None
@@ -132,16 +132,26 @@ class CrawlJob(object):
 		start = datetime.now()
 		while self.db.queue.count > 0:	
 			for url in self.db.queue.distinct("url"):
-				#print url
-				page = Page(url, self.query)
-				page.check()
-				
-				if page.status is True:
-					page.request()
-					page.control()
-					page.extract()
-					
-				
+				if url != "":
+					page = Page(url, self.query)
+					if page.check() and page.request() and page.control() and page.extract():
+						print page.article.cleaned_text
+					else:
+						print page.error_type
+						#~ outlinks, outlinks_err = page.get_outlinks()
+						#~ if len(outlinks_err) > 0:
+							#~ self.db.logs.insert(outlinks_err)
+						#~ self.db.queue.insert(outlinks)
+						#~ print self.db.queue.count()
+							#~ for l in logs:
+								#~ print l
+						#~ for url in page.outlinks:
+							#~ outlink = {"status": "", "status_code": "", "error_type": "", "url": ""}
+							#~ url = from_rel_to_absolute_url(url,page.url)
+							#~ outlink["status"], outlink["status_code"], outlink["error_type"], outlink["url"] = check_url(url)
+							#~ outlink["url"]
+					#~ 
+				#~ 
 				#~ if page.status is False:
 					#~ self.db.logs.insert(page.bad_status())
 				#~ else:
