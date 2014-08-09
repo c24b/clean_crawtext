@@ -70,7 +70,7 @@ class Article(object):
         # return the article
 		self.links = self.extractor.get_links()
 		self.outlinks_err, self.outlinks = self.extractor.get_outlinks()
-		return self
+		
 		
 		
 class ContentExtractor(object):

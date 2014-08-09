@@ -134,10 +134,12 @@ class CrawlJob(object):
 			for url in self.db.queue.distinct("url"):
 				if url != "":
 					page = Page(url, self.query)
-					if page.check() and page.request() and page.control() and page.extract():
-						print page.article.cleaned_text
-					else:
-						print page.error_type
+					if page.check() and page.request() and page.control():
+						content = page.extract()
+						if content is not False:
+							print content
+						else:
+							print False
 						#~ outlinks, outlinks_err = page.get_outlinks()
 						#~ if len(outlinks_err) > 0:
 							#~ self.db.logs.insert(outlinks_err)
