@@ -146,6 +146,7 @@ class Page(object):
 			a = Article(self.url, self.raw_html)		
 			self.article = a.extract()
 			self.outlinks = self.article.links
+			
 			self.status = True		
 		
 		except Exception, e:
