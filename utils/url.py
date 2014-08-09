@@ -20,7 +20,7 @@ from abpy import Filter
 #IGNORED_DOMAINS = adblock.get_list()
 
 # common scheme that are not followed if they occur in links
-IGNORED_PROTOCOL = ['ftp', 'sftp', 'mailto', 'magnet', 'javascript']
+#IGNORED_PROTOCOL = ['ftp', 'sftp', 'mailto', 'magnet', 'javascript']
 ACCEPTED_PROTOCOL = ['http', 'https']
 
 # common file extensions that are not followed if they occur in links
@@ -44,34 +44,45 @@ IGNORED_EXTENSIONS = [
 	'zip', 'rar', 'gz', 'bz2', 'torrent', 'tar',
 	 
     # other
-    'css', 'pdf', 'exe', 'bin', 'rss','dtd', 'asp', 'asp', 'js',
+    'css', 'pdf', 'exe', 'bin', 'rss','dtd', 'asp', 'js', 'torrent',
 ]
 IGNORED_DOMAINS = Filter(file('./utils/easylist.txt'))
 
-def is_valid_url(url):
-	if url is not None or url not in ['', '/', "#", "##"]:
-		if url_has_any_extension(url, IGNORED_EXTENSIONS) is True:
-			print "Correct extension", url_is_from_any_extension(url), urlparse(url).netloc
-			if url_is_from_any_domain(url) is False:
-				print "Correct domain", url_is_from_any_domain(url), urlparse(url).netloc
-				if url_has_any_protocol(url, IGNORED_PROTOCOL) is False:
-					print "Scheme", url_is_from_any_protocol(url), urlparse(url).scheme
-					return True
-	else:
-		return False
+def check_url(url):
+	'''Bool: check the format of the curr url'''
+	if url is None or len(url) <= 1 or url == "\n":
+		error_type = "Url is empty"
+		status = False
+		status_code = 406
 		
-def validate_url(url, root_url=""):
-	if url is not None or url not in ['', '/', "#", "##"]:
-		if url_is_from_any_domain(url) is False:
-				if url_has_any_protocol(url, IGNORED_PROTOCOL) is False:
-					url = from_rel_to_absolute_url(url,root_url)
-					print url
-					if url_has_any_extension(url, IGNORED_EXTENSIONS) is False:
-						url = escape_ajax(url)
-						return canonicalize_url(url)
-					
-						
-	return False
+	elif url_has_any_extension(url, IGNORED_EXTENSIONS) is True :
+		error_type="Url has not a supported extension (PDF, ZIP, etc...)"
+		status = False
+		status_code = 406.1
+		
+	elif url_is_from_any_domain(url, IGNORED_DOMAINS) is True:
+		error_type="Url refers to an advertissement listed in Adblock"
+		status = False
+		status_code = 406.2
+		
+	else:
+		scheme = urlparse(url).scheme
+		if scheme == "" or scheme is None:
+			url = "http://"+url
+			status = True
+			status_code = 200
+			error_type = None
+			
+		elif scheme not in ACCEPTED_PROTOCOL:
+			error_type="Protocol is not http or https"
+			status = False
+			status_code = 406.2	
+		else:
+			status = True
+			status_code = 200
+			error_type = None
+	return (status, status_code, error_type)
+			
 
 def url_has_any_protocol(url, protocols):
 	"""Return True if the url belongs to any of the given protocol"""

@@ -34,7 +34,10 @@ class Page(object):
 		self.status_code = 0
 		
 	def check(self):
+		self.status, self.status_code, self.error_type = check_url(self.url)
+		return self.status
 		'''Bool: check the format of the curr url'''
+		'''
 		if self.url is None or len(self.url) <= 1 or self.url == "\n":
 			self.error_type = "Url is empty"
 			self.status = False
@@ -69,7 +72,7 @@ class Page(object):
 				self.status_code = 200
 				
 				return self.status
-		
+		'''
 	def request(self):
 		'''Bool request a webpage: return boolean and update raw_html'''
 		try:
