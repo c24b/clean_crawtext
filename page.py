@@ -19,7 +19,7 @@ from tld import get_tld
 from abpy import Filter
 
 from extractors import Article
-from utils.url import validate_url
+from utils.url import *
 
 
         
@@ -34,22 +34,41 @@ class Page(object):
 		self.status_code = 0
 		
 	def check(self):
-		'''Bool: check the format of the next url compared to curr url'''
+		'''Bool: check the format of the curr url'''
 		if self.url is None or len(self.url) <= 1 or self.url == "\n":
 			self.error_type = "Url is empty"
 			self.status = False
 			self.status_code = 406
-		elif validate_url(self.url) is False:
-			self.error_type="Url has not a proprer extension or page is an advertissement or protocol is incorrect"
+			return self.status
+		elif url_has_any_extension(self.url, IGNORED_EXTENSIONS) is True :
+			self.error_type="Url has not a supported extension (PDF, ZIP, etc...)"
 			self.status = False
 			self.status_code = 406.1
+			return self.status
+		elif url_is_from_any_domain(self.url, IGNORED_DOMAINS) is True:
+			self.error_type="Url refers to an advertissement listed in Adblock"
+			self.status = False
+			self.status_code = 406.2
+			return self.status
 		else:
 			self.scheme = urlparse(self.url).scheme
-			if self.scheme == "":
+			if self.scheme == "" or self.scheme is None:
 				self.url = "http://"+self.url
-			self.status = True
-			self.status_code = 200
-		return self.status
+				self.status = True
+				self.status_code = 200
+				return self.status
+				
+			elif self.scheme not in ACCEPTED_PROTOCOL:
+				self.error_type="Protocol is not http or https"
+				self.status = False
+				self.status_code = 406.2
+				return self.status
+			
+			else:
+				self.status = True
+				self.status_code = 200
+				
+				return self.status
 		
 	def request(self):
 		'''Bool request a webpage: return boolean and update raw_html'''
@@ -86,7 +105,6 @@ class Page(object):
 			self.error_type = "Another wired exception: %s %s" %(e, e.args)
 			self.status_code = 204
 			self.status = False
-			
 		return self.status
 		
 	def control(self):

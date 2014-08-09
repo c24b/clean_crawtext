@@ -46,17 +46,31 @@ IGNORED_EXTENSIONS = [
     # other
     'css', 'pdf', 'exe', 'bin', 'rss','dtd', 'asp', 'asp', 'js',
 ]
+IGNORED_DOMAINS = Filter(file('./utils/easylist.txt'))
 
-	
+def is_valid_url(url):
+	if url is not None or url not in ['', '/', "#", "##"]:
+		if url_has_any_extension(url, IGNORED_EXTENSIONS) is True:
+			print "Correct extension", url_is_from_any_extension(url), urlparse(url).netloc
+			if url_is_from_any_domain(url) is False:
+				print "Correct domain", url_is_from_any_domain(url), urlparse(url).netloc
+				if url_has_any_protocol(url, IGNORED_PROTOCOL) is False:
+					print "Scheme", url_is_from_any_protocol(url), urlparse(url).scheme
+					return True
+	else:
+		return False
+		
 def validate_url(url, root_url=""):
 	if url is not None or url not in ['', '/', "#", "##"]:
 		if url_is_from_any_domain(url) is False:
-			if url_has_any_extension(url, IGNORED_EXTENSIONS) is False:
 				if url_has_any_protocol(url, IGNORED_PROTOCOL) is False:
-					if parse_url(url).scheme != "":
-						url = from_rel_to_absolute_url(url,root_url)
+					url = from_rel_to_absolute_url(url,root_url)
+					print url
+					if url_has_any_extension(url, IGNORED_EXTENSIONS) is False:
 						url = escape_ajax(url)
 						return canonicalize_url(url)
+					
+						
 	return False
 
 def url_has_any_protocol(url, protocols):
@@ -67,10 +81,9 @@ def url_has_any_protocol(url, protocols):
 	else:
 		return False
     
-def url_is_from_any_domain(url):
+def url_is_from_any_domain(url, domains):
     """Return True if the url belongs to any of the given domains"""
-    adblock = Filter(file('./utils/easylist.txt'))
-    if len( adblock.match(url) ) > 0:
+    if len( domains.match(url) ) > 0:
 		return True
     else:
         return False
@@ -82,22 +95,27 @@ def url_is_from_spider(url, spider):
         [spider.name] + list(getattr(spider, 'allowed_domains', [])))
 
 def url_has_any_protocol(url, protocols):
-	return posixpath.splitext(parse_url(url).scheme)[1].lower() in protocols
+	print protocols
+	return (parse_url(url).scheme).lower() in protocols
 	
 def url_has_any_extension(url, extensions):
-    return posixpath.splitext(parse_url(url).path)[1].lower() in extensions
+	return posixpath.splitext(parse_url(url).netloc)[1].lower() in extensions
 
 
 def relative_url(url):
-	if urlparse(url).netloc is None and (path == "/" or path == "../"):
+	if urlparse(url).netloc is None:
 		return True
-	
+	if urlparse(url).path == "/" or urlparse(url).path == "../":
+		return True
+	else:
+		return False
 			
 def from_rel_to_absolute_url(url,root_url):
 	scheme, netloc, path, params, query, fragment = urlparse(url)
 	if relative_url(url):
 		scheme = urlparse(root_url).scheme
 		netloc = urlparse(root_url).netloc
+	print netloc
 	return urlunparse((scheme, netloc.lower(), path, params, query, fragment))	
 
 def check_scheme(url):
