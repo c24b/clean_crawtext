@@ -34,7 +34,7 @@ class Page(object):
 		self.status_code = 0
 		
 	def check(self):
-		self.status, self.status_code, self.error_type = check_url(self.url)
+		self.status, self.status_code, self.error_type, self.final_url = check_url(self.url)
 		return self.status
 		'''Bool: check the format of the curr url'''
 		'''
@@ -146,20 +146,20 @@ class Page(object):
 		try:
 		
 			#self.url = self.clean_url(self.url)
-			a = Article(self.url, self.raw_html)		
-			self.article = a.extract()
-			self.outlinks = self.article.links
-			
-			self.status = True		
-		
+			article = Article(self.url, self.raw_html)		
+			self.article = article.extract()
+			self.outlinks = self.article.outlinks
+			self.outlinks_err = self.article.outlinks_err
+			self.status = True
 		except Exception, e:
-			print e
-			self.error_type = str(e)
+			self.error_type = "Error in extracting article :"+str(e)
 			self.status_code = -2
 			self.status = False
-		
 		return self.status
-					
+	
+	
+		
+						
 	def is_relevant(self):
 		'''Bool Decide if page is relevant and match the correct query. Reformat the query properly: supports AND, OR and space'''
 		if self.query is not None:

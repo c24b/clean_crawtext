@@ -64,11 +64,11 @@ def check_url(url):
 		error_type="Url refers to an advertissement listed in Adblock"
 		status = False
 		status_code = 406.2
-		
+	
 	else:
 		scheme = urlparse(url).scheme
 		if scheme == "" or scheme is None:
-			url = "http://"+url
+			url = "http://"+escape_anchor(escape_ajax(url))
 			status = True
 			status_code = 200
 			error_type = None
@@ -81,7 +81,8 @@ def check_url(url):
 			status = True
 			status_code = 200
 			error_type = None
-	return (status, status_code, error_type)
+			url = escape_anchor(escape_ajax(url))
+	return (status, status_code, error_type, url)
 			
 
 def url_has_any_protocol(url, protocols):
@@ -113,22 +114,27 @@ def url_has_any_extension(url, extensions):
 	return posixpath.splitext(parse_url(url).netloc)[1].lower() in extensions
 
 
-def relative_url(url):
-	if urlparse(url).netloc is None:
+def is_relative_url(url):
+	netloc = urlparse(url).netloc
+	if netloc is None or netloc == "":
 		return True
-	if urlparse(url).path == "/" or urlparse(url).path == "../":
-		return True
+	#~ if urlparse(url).path == "/" or urlparse(url).path == "../":
+		#~ return True
 	else:
 		return False
 			
 def from_rel_to_absolute_url(url,root_url):
-	scheme, netloc, path, params, query, fragment = urlparse(url)
-	if relative_url(url):
-		scheme = urlparse(root_url).scheme
-		netloc = urlparse(root_url).netloc
-	print netloc
-	return urlunparse((scheme, netloc.lower(), path, params, query, fragment))	
-
+	try:
+		scheme, netloc, path, params, query, fragment = urlparse(url)
+		if is_relative_url(url):
+			scheme = urlparse(root_url).scheme
+			netloc = urlparse(root_url).netloc
+			return urlunparse((scheme, netloc.lower(), path, params, query, fragment))
+		else:
+			return url
+	except AttributeError:
+		return url
+		
 def check_scheme(url):
 	scheme = urlparse(url).scheme
 	print scheme
@@ -177,8 +183,10 @@ def parse_url(url, encoding=None):
     return url if isinstance(url, ParseResult) else \
         urlparse(unicode_to_str(url, encoding))
 
-def escape_js(url):
-	pass
+def escape_anchor(url):
+	'''escape_anchor("www.example.com/ajax.html#!key=value")'''
+	url = re.split("#", url)
+	return url[0]
 			
 def escape_ajax(url):
     """
@@ -205,6 +213,5 @@ def escape_ajax(url):
     """
     defrag, frag = urldefrag(url)
     if not frag.startswith('!'):
-        if url not in ["#"]:
-			return url
+        return url
     return add_or_replace_parameter(defrag, '_escaped_fragment_', frag[1:])
