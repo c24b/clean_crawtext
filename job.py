@@ -140,7 +140,8 @@ class CrawlJob(object):
 					if page.check() and page.request() and page.control():
 						if page.extract("article"):
 							print page.article.title
-							print page.article.links
+							for n in page.article.outlinks_err:
+								print n
 						else:
 							self.db.log.insert(status)
 				self.db.queue.remove({"url": url})
