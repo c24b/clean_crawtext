@@ -114,38 +114,19 @@ class Page(object):
 	def extract(self, type="article"):
 		'''Dict extract content and info of webpage return boolean and self.info'''	
 		self.status["step"] = "extract %s" %type
-		#~ try:
+		try:
 			#~ 
-		self.article = Extractor.run(type, self.url, self.raw_html)
-		self.status["status"] = True
-		return self.article.title
-		'''	
+			self.article = Extractor.run(type, self.url, self.raw_html)
+			self.status["status"] = True
+		
 		except Exception as e:
 			self.status["msg"]="Extraction error %s" %e
 			self.status["code"] = -2
 			self.status["status"] = False
+		
 		return self.status["status"]	
 		
-		#~ if self.output_format == "defaut":
-			#~ self.article = Article(self)
-			#~ #try:	
-				#~ #self.url = self.clean_url(self.url)
-				#~ #self.content = 
-				#~ 
-				self.outlinks = self.article.outlinks
-				self.outlinks_err = self.article.outlinks_err
-			#~ self.status = True
-			#~ a = Article(self.url, self.raw_html)
-			#~ print a
-			except Exception, e:
-				print e
-				self.error_type = "Error in extracting article :"+str(e)
-				self.status_code = -2
-				self.status = False
-				pass
-				#return self.status
-'''	
-	
+		
 		
 						
 	def is_relevant(self):

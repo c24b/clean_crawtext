@@ -124,7 +124,8 @@ class Article(Extractor):
 			self.top_node = extractor.post_cleanup()
 		# clean_text
 		self.cleaned_text = formatter.get_formatted_text()
-		
+		self.links = extractor.get_links()
+		self.outlinks_err, self.outlinks = extractor.get_outlinks()
 		# TODO
 		# self.article.publish_date = self.extractor.get_pub_date(doc)
 		# self.article.additional_data = self.extractor.more(doc)

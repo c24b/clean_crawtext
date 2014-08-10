@@ -138,31 +138,11 @@ class CrawlJob(object):
 				if url != "":
 					page = Page(url, self.query)
 					if page.check() and page.request() and page.control():
-						content = page.extract("article")
-						if content is not False:
-							print content
+						if page.extract("article"):
+							print page.article.title
+							print page.article.links
 						else:
-							print False
-						#~ outlinks, outlinks_err = page.get_outlinks()
-						#~ if len(outlinks_err) > 0:
-							#~ self.db.logs.insert(outlinks_err)
-						#~ self.db.queue.insert(outlinks)
-						#~ print self.db.queue.count()
-							#~ for l in logs:
-								#~ print l
-						#~ for url in page.outlinks:
-							#~ outlink = {"status": "", "status_code": "", "error_type": "", "url": ""}
-							#~ url = from_rel_to_absolute_url(url,page.url)
-							#~ outlink["status"], outlink["status_code"], outlink["error_type"], outlink["url"] = check_url(url)
-							#~ outlink["url"]
-					#~ 
-				#~ 
-				#~ if page.status is False:
-					#~ self.db.logs.insert(page.bad_status())
-				#~ else:
-					#~ print page.__dict__
-					#~ self.db.results.insert(page.info)
-						#~ 
+							self.db.log.insert(status)
 				self.db.queue.remove({"url": url})
 				#~ if self.db.queue.count() == 0:
 					#~ break
