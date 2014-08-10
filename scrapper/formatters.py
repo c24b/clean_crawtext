@@ -5,13 +5,13 @@ from utils.text import innerTrim
 from utils.text import StopWords
 class OutputFormatter(object):
 
-    def __init__(self,article, parser, stopwords_class="en"):
+    def __init__(self,article, stopwords_class="en"):
         
         # article
         self.article = article
 
         # parser
-        self.parser = parser
+        self.parser = article.parser
 
         # stopwords class
         self.stopwords_class = stopwords_class

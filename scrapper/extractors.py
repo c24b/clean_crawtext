@@ -29,62 +29,19 @@ A_REL_TAG_SELECTOR = "a[rel=tag]"
 A_HREF_TAG_SELECTOR = "a[href*='/tag/'], a[href*='/tags/'], a[href*='/topic/'], a[href*='?keyword=']"
 RE_LANG = r'^[A-Za-z]{2}$'
 
-class Article(object):
-	'''Article'''
-	def __init__(self, url, raw_html, lang="en"):
-		#extraction set
-		#target_language=lang
-		#stopwords_class=lang
-		self.doc = raw_html
-		self.url = url
-		#init parser here defaut parser
-		self.parser = Parser()
-		extractor = StandardContentExtractor(url, raw_html, self.parser, lang, lang)
-		# init the document cleaner
-		cleaner = StandardDocumentCleaner(self, self.parser)
-		# init the output formatter
-		formatter = StandardOutputFormatter(self, self.parser, lang)
-		
-		# TODO
-		# self.article.publish_date = config.publishDateExtractor.extract(doc)
-		# self.article.additional_data = config.get_additionaldata_extractor.extract(doc)
-		self.title = extractor.get_title()
-		self.meta_lang = extractor.get_meta_lang()
-		self.meta_favicon = extractor.get_favicon()
-		self.meta_description = extractor.get_meta_description()
-		self.meta_keywords = extractor.get_meta_keywords()
-		self.canonical_link = extractor.get_canonical_link()
-		self.domain = extractor.get_domain()
-		self.tags = extractor.extract_tags()
-
-		# before we do any calcs on the body itself let's clean up the document
-		self.doc = cleaner.clean()
-
-		# big stuff
-		self.top_node = extractor.calculate_best_node()
-		# if we have a top node
-		# let's process it
-		if self.top_node is not None:
-            # post cleanup
-			self.top_node = extractor.post_cleanup()
-
-			# clean_text
-			self.cleaned_text = formatter.get_formatted_text()
-        # return the article
-		self.links = extractor.get_links()
-		self.outlinks_err, self.outlinks = self.extractor.get_outlinks()
-		print self.__dict__
 		
 		
 class ContentExtractor(object):
 	'''class with all the methods for Extracting content'''
-	def __init__(self, url, raw_html, parser, target_language="en", stopwords_class="en"):
+	def __init__(self, article, target_language="en", stopwords_class="en"):
 		
 		#~ # parser
-		self.parser = parser
+		self.parser = article.parser
+		self.article = article
 		#url
-		self.url = url
-		self.doc = raw_html
+		self.url = article.url
+		#self.doc = self.doc
+		
 		#self.raw_html = raw_html
 		# article
 		#self.article = article
@@ -103,9 +60,8 @@ class ContentExtractor(object):
 		"""
 
 		title = ''
-		doc = self.doc
-
-		title_element = self.parser.getElementsByTag(doc, tag='title')
+		
+		title_element = self.parser.getElementsByTag(self.article.doc, tag='title')
 		# no title found
 		if title_element is None or len(title_element) == 0:
 			return title
@@ -164,7 +120,7 @@ class ContentExtractor(object):
 		<link rel="icon" type="image/png" href="favicon.png" />
 		"""
 		kwargs = {'tag': 'link', 'attr': 'rel', 'value': 'icon'}
-		meta = self.parser.getElementsByTag(self.doc, **kwargs)
+		meta = self.parser.getElementsByTag(self.article.doc, **kwargs)
 		if meta:
 			favicon = self.parser.getAttribute(meta[0], 'href')
 			return favicon
@@ -175,7 +131,7 @@ class ContentExtractor(object):
 		Extract content language from meta
 		"""
 		# we have a lang attribute in html
-		attr = self.parser.getAttribute(self.doc, attr='lang')
+		attr = self.parser.getAttribute(self.article.doc, attr='lang')
 		if attr is None:
 			# look up for a Content-Language in meta
 			items = [
@@ -183,7 +139,7 @@ class ContentExtractor(object):
 				{'tag': 'meta', 'attr': 'name', 'value': 'lang'}
 			]
 			for item in items:
-				meta = self.parser.getElementsByTag(self.doc, **item)
+				meta = self.parser.getElementsByTag(self.article.doc, **item)
 				if meta:
 					attr = self.parser.getAttribute(meta[0], attr='content')
 					break
@@ -214,13 +170,13 @@ class ContentExtractor(object):
 		"""\
 		if the article has meta description set in the source, use that
 		"""
-		return self.get_meta_content(self.doc, "meta[name=description]")
+		return self.get_meta_content(self.article.doc, "meta[name=description]")
 
 	def get_meta_keywords(self):
 		"""\
 		if the article has meta keywords set in the source, use that
 		"""
-		return self.get_meta_content(self.doc, "meta[name=keywords]")
+		return self.get_meta_content(self.article.doc, "meta[name=keywords]")
 
 	def get_canonical_link(self):
 		"""\
@@ -243,12 +199,12 @@ class ContentExtractor(object):
 
 	def get_domain(self):
 		if self.url:
-			o = urlparse(self.url)
+			o = urlparse(self.article.url)
 			return o.hostname
 		return None
 
 	def extract_tags(self):
-		node = self.doc
+		node = self.article.doc
 
 		# node doesn't have chidren
 		if len(list(node)) == 0:
@@ -269,7 +225,7 @@ class ContentExtractor(object):
 		return set(tags)
 
 	def get_links(self):
-		node = self.doc
+		node = self.article.doc
 		select = CSSSelector("a")
 		self.links = [ el.get('href') for el in select(node)]
 		self.links = [n for n in self.links if n is not None or n != ""]
@@ -304,7 +260,7 @@ class ContentExtractor(object):
 			
 
 	def calculate_best_node(self):
-		doc = self.doc
+		doc = self.article.doc
 		top_node = None
 		nodes_to_check = self.nodes_to_check(doc)
 
@@ -368,13 +324,13 @@ class ContentExtractor(object):
 			score = self.get_score(e)
 
 			if score > top_node_score:
-				top_node = e
-				top_node_score = score
+				self.top_node = e
+				self.top_node_score = score
 
 			if top_node is None:
-				top_node = e
+				self.top_node = e
 
-		return top_node
+		return self.top_node
 
 	def is_boostable(self, node):
 		"""\

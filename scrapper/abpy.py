@@ -109,7 +109,7 @@ class Filter(object):
 
 
 
-if __name__ == '__main__':
-    f = Filter(file('easylist.txt'), is_local=True)
-    print 'start matching'
-    f.match(sys.argv[1])
+#~ if __name__ == '__main__':
+    #~ f = Filter(file('easylist.txt'), is_local=True)
+    #~ print 'start matching'
+    #~ f.match(sys.argv[1])

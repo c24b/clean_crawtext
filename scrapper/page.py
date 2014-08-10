@@ -18,29 +18,32 @@ from random import choice
 from tld import get_tld
 from abpy import Filter
 
-from extractors import Article
+from article import Extractor
 from utils.url import *
 
 
         
 class Page(object):
 	'''Page factory'''
-	def __init__(self, url, query= "", output_format="article"):
+	def __init__(self, url, query= "", output_format="defaut"):
 		self.url = url
 		self.query = query
 		self.crawl_date = datetime.datetime.now()
-		self.status = {"msg":"OK", "status": None, "code": 0, "step": None}
+		self.status = {"msg":None, "status": None, "code": None, "step": None, "url": self.url}
 		#~ self.error_type = "Ok"
 		#~ self.status = "Ok"
 		#~ self.status_code = 0
 		self.output_format = output_format
 		
 	def check(self):
-		self.status, self.status_code, self.error_type, self.url = check_url(self.url)
+		self.status["step"] = "check"
+		self.status["status"], self.status["code"], self.status["msg"], status["url"] = check_url(self.url)
+		self.url = status[|"url"]
 		return self.status
 		
 	def request(self):
 		'''Bool request a webpage: return boolean and update raw_html'''
+		self.status["step"] = "request"
 		try:
 			requests.adapters.DEFAULT_RETRIES = 2
 			user_agents = [u'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.1 (KHTML, like Gecko) Chrome/22.0.1207.1 Safari/537.1', u'Mozilla/5.0 (Windows NT 6.1; rv:15.0) Gecko/20120716 Firefox/15.0a2', u'Mozilla/5.0 (compatible; MSIE 10.6; Windows NT 6.1; Trident/5.0; InfoPath.2; SLCC1; .NET CLR 3.0.4506.2152; .NET CLR 3.5.30729; .NET CLR 2.0.50727) 3gpp-gba UNTRUSTED/1.0', u'Opera/9.80 (Windows NT 6.1; U; es-ES) Presto/2.9.181 Version/12.00']
@@ -51,45 +54,46 @@ class Page(object):
 				
 				try:
 					self.raw_html = self.req.text
-					self.status = True
-					self.status = 200
+					self.status["status"] = True
+					self.status["code"] = 200
 					
 				except Exception, e:
-					self.error_type = "Request answer was not understood %s" %e
-					self.status_code = 400
-					self.status = False
+					self.status["msg"] = "Request answer was not understood %s" %e
+					self.status["code"] = = 400
+					self.status["status"] = False
 					
 			except Exception, e:
-				self.error_type = "Request answer was not understood %s" %e
-				self.status_code = 400
-				self.status = False
+				self.status["msg"] = "Request answer was not understood %s" %e
+				self.status["code"] = 400
+				self.status["status"] = False
 				
 		except requests.exceptions.MissingSchema:
-			self.error_type = "Incorrect url - Missing sheme for : %s" %self.url
-			self.status_code = 406
-			self.status = False
+			self.status["msg"] = "Incorrect url - Missing sheme for : %s" %self.url
+			self.status["code"] = 406
+			self.status["status"] = False
 			
 		except Exception as e:
-			self.error_type = "Another wired exception: %s %s" %(e, e.args)
-			self.status_code = 204
-			self.status = False
-		return self.status
+			self.status["msg"] = "Another wired exception: %s %s" %(e, e.args)
+			self.status["code"] = 204
+			self.status["status"] = False
+		return self.status["status"]
 		
 	def control(self):
 		'''Bool control the result if text/html or if content available'''
+		self.status["step"] = "control"
 		#Content-type is not html 
 		try:
 			self.req.headers['content-type']
 			if 'text/html' not in self.req.headers['content-type']:
-				self.error_type="Content type is not TEXT/HTML"
-				self.status_code = 404
-				self.status = False
+				self.status["msg"]="Content type is not TEXT/HTML"
+				self.status["code"] = 404
+				self.status["status"] = False
 				
 			#Error on ressource or on server
 			elif self.req.status_code in range(400,520):
-				self.status_code = self.req.status_code
-				self.error_type="Request error on connexion no ressources or not able to reach server"
-				self.status = False
+				self.status["code"] = self.req.status_code
+				self.status["msg"]="Request error on connexion no ressources or not able to reach server"
+				self.status["status"] = False
 				
 			#Redirect
 			#~ elif len(self.req.history) > 0 | self.req.status_code in range(300,320): 
@@ -97,28 +101,39 @@ class Page(object):
 				#~ self.bad_status()
 				#~ return False
 			else:
-				self.status = True
+				self.status["status"] = True
 		#Headers problems		
 		except Exception:
-			self.error_type="Request headers were not found"
-			self.status_code = 403
-			self.status = False
-		return self.status	
+			self.status["msg"]="Request headers were not found"
+			self.status["code"] = 403
+			self.status["status"] = False
+		return self.status["status"]	
 	
 			
-	def extract(self, format="article"):
+	def extract(self, type="article"):
 		'''Dict extract content and info of webpage return boolean and self.info'''	
-		if format == "article":
+		self.status["step"] = "extract %s" self.output_format
+		try:
 			
-			#try:	
-				#self.url = self.clean_url(self.url)
-				#self.content = 
-				
-				#~ self.outlinks = self.article.outlinks
-				#~ self.outlinks_err = self.article.outlinks_err
-			self.status = True
-			a = Article(self.url, self.raw_html)
-			print a
+			self.article = Extractor(type)
+			self.status["status"] = True
+			
+		except Exception as e:
+			self.status["msg"]="Extraction error %s" %e
+			self.status["code"] = -2
+			self.status["status"] = False
+		return self.status["status"]	
+		#~ if self.output_format == "defaut":
+			#~ self.article = Article(self)
+			#~ #try:	
+				#~ #self.url = self.clean_url(self.url)
+				#~ #self.content = 
+				#~ 
+				self.outlinks = self.article.outlinks
+				self.outlinks_err = self.article.outlinks_err
+			#~ self.status = True
+			#~ a = Article(self.url, self.raw_html)
+			#~ print a
 			'''except Exception, e:
 				print e
 				self.error_type = "Error in extracting article :"+str(e)

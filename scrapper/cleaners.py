@@ -3,9 +3,9 @@ from utils import ReplaceSequence
 
 class DocumentCleaner(object):
 
-    def __init__(self, article, parser):
+    def __init__(self, article):
         # parser
-        self.parser = parser
+        self.parser = article.parser
 
         # article
         self.article = article

@@ -138,7 +138,7 @@ class CrawlJob(object):
 				if url != "":
 					page = Page(url, self.query)
 					if page.check() and page.request() and page.control():
-						content = page.extract()
+						content = page.extract("article")
 						if content is not False:
 							print content
 						else:
