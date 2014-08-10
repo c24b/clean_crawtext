@@ -29,13 +29,14 @@ class Page(object):
 		self.url = url
 		self.query = query
 		self.crawl_date = datetime.datetime.now()
-		self.error_type = "Ok"
-		self.status = "Ok"
-		self.status_code = 0
+		self.status = {"msg":"OK", "status": None, "code": 0, "step": None}
+		#~ self.error_type = "Ok"
+		#~ self.status = "Ok"
+		#~ self.status_code = 0
 		self.output_format = output_format
 		
 	def check(self):
-		self.status, self.status_code, self.error_type, self.final_url = check_url(self.url)
+		self.status, self.status_code, self.error_type, self.url = check_url(self.url)
 		return self.status
 		
 	def request(self):
@@ -59,7 +60,6 @@ class Page(object):
 					self.status = False
 					
 			except Exception, e:
-				#print "Error requesting the url", e
 				self.error_type = "Request answer was not understood %s" %e
 				self.status_code = 400
 				self.status = False
