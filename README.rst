@@ -1,26 +1,26 @@
-docstring: documentation for your API endpoints
+crawtext: a simple crawler in command line
 ===============================================
 
-.. image:: https://secure.travis-ci.org/daniyalzade/docstring.png
-        :target: https://secure.travis-ci.org/daniyalzade/docstring
+.. image:: http://www.cortext.net/IMG/siteon0.png?1300195437
+        :target: http://www.cortext.net
 
 
-Decorators for auto-generating HTML response for API endpoints
+Module to crawl the web and store ressources based on your query or ressources urls using commandline
 
 Installation
 ------------
 
 To install requests, simply: ::
 
-    $ pip install docstring
+    $ pip install crawtxt
 
 Source
 ------
 
-You can see the code `here <https://github.com/daniyalzade/docstring>`_
+You can see the code `here <https://github.com/c24b/clean_crawtext>`_
 
 TODO
 ----
-* Figure out if we can remove the dependency to django and tornado
-* Make sure that we can get the API permissions to work
-* Add entries for read the docs
+* Build a web interface
+
+
