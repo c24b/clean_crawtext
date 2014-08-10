@@ -116,9 +116,9 @@ class CrawlJob(object):
 			
 		
 	def send_seeds_to_queue(self):
-		#here we could filter out problematic urls
 		for url in self.db.sources.distinct("url"):
-			self.db.queue.insert({"url":url})
+			if url not in self.db.logs.find({"url": url}):
+				self.db.queue.insert({"url":url})
 		return True
 		
 			
@@ -139,11 +139,13 @@ class CrawlJob(object):
 					page = Page(url, self.query)
 					if page.check() and page.request() and page.control():
 						if page.extract("article"):
-							print page.article.title
-							for n in page.article.outlinks_err:
-								print n
-						else:
-							self.db.log.insert(status)
+							self.db.queue.insert(page.content.outlinks)
+							self.db.logs.insert(page.content.outlinks_err)
+							
+							#~ print page.article.outlinks
+						#~ else:
+							#~ print page.status
+							#~ #self.db.logs.insert(status)
 				self.db.queue.remove({"url": url})
 				#~ if self.db.queue.count() == 0:
 					#~ break

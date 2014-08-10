@@ -115,20 +115,26 @@ class Page(object):
 		'''Dict extract content and info of webpage return boolean and self.info'''	
 		self.status["step"] = "extract %s" %type
 		try:
-			#~ 
-			self.article = Extractor.run(type, self.url, self.raw_html)
+			self.content = Extractor.run(type, self.url, self.raw_html)
 			self.status["status"] = True
 		
 		except Exception as e:
 			self.status["msg"]="Extraction error %s" %e
 			self.status["code"] = -2
 			self.status["status"] = False
-		
+	
 		return self.status["status"]	
+	
+	def filter(self, query= None, content= None):
+		if query is None:
+			query = self.query
+		if content is None
+			content = self.content
+		chunks = StringSplitter(" |-|\.|OR|or")
+		s_content = chunks.split(content.lower)
 		
 		
-		
-						
+							
 	def is_relevant(self):
 		'''Bool Decide if page is relevant and match the correct query. Reformat the query properly: supports AND, OR and space'''
 		if self.query is not None:

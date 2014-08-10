@@ -40,14 +40,14 @@ class Extractor(object):
 	@staticmethod
 	def run(type, url, raw_html):
 		if type == "article":
-			article = Article(url, raw_html)
+			content = Article(url, raw_html)
 		elif type == "defaut":
-			article = WebPage()
+			content = WebPage()
 		else:
 			raise NotImplementedError	
 		#init parser here defaut parser
 		
-		return article.get()
+		return content.get()
 		
 
 
@@ -85,6 +85,7 @@ class Article(Extractor):
 		self.start_date = datetime.datetime.today()
 	
 	def get(self):
+		
 		self.doc = self.parser.fromstring(self.raw_html)
 		#init extractor method
 		extractor = StandardContentExtractor(self,"en")	
@@ -125,7 +126,8 @@ class Article(Extractor):
 		# clean_text
 		self.cleaned_text = formatter.get_formatted_text()
 		self.links = extractor.get_links()
-		self.outlinks_err, self.outlinks = extractor.get_outlinks()
+		self.outlinks, self.outlinks_err = extractor.get_outlinks(self.links)
+		self.inlinks, self.inlinks_err = extractor.get_outlinks(self.links)
 		# TODO
 		# self.article.publish_date = self.extractor.get_pub_date(doc)
 		# self.article.additional_data = self.extractor.more(doc)

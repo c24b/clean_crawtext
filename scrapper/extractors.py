@@ -231,24 +231,26 @@ class ContentExtractor(object):
 		self.links = [n for n in self.links if n is not None or n != ""]
 		return set(self.links)
 
-	def get_outlinks(self):
+	def get_outlinks(self,links):
 		self.outlinks = []
 		self.outlinks_err = []
 		outlink = {"status": "", "status_code": "", "error_type": "", "url": "", "scope": "outlinks"}
-		for url in self.links:
+		for url in links:
 			url = from_rel_to_absolute_url(url,self.url)
 			outlink["status"], outlink["status_code"], outlink["error_type"], outlink["url"] = check_url(url)
-			if outlink["status"] is True:
+			
+			if outlink["status"]:
 				self.outlinks.append({"url":outlink["url"]})
 			else:
 				self.outlinks_err.append(outlink)
+		
 		return self.outlinks, self.outlinks_err
 		
-	def get_inlinks(self):
+	def get_inlinks(self, links):
 		self.inlinks = []
 		self.inlinks_err = []
 		inlink = {"status": "", "status_code": "", "error_type": "", "url": "", "scope": "inlinks"}
-		for url in self.links:
+		for url in links:
 			if is_relative_url(url):
 				url = from_rel_to_absolute_url(url,self.url)
 				inlink["status"], inlink["status_code"], inlink["error_type"], inlink["url"] = check_url(url)
