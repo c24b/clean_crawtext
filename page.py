@@ -145,20 +145,23 @@ class Page(object):
 		'''Dict extract content and info of webpage return boolean and self.info'''	
 		if format == "article":
 			
-			try:	
+			#try:	
 				#self.url = self.clean_url(self.url)
 				#self.content = 
 				
 				#~ self.outlinks = self.article.outlinks
 				#~ self.outlinks_err = self.article.outlinks_err
-				self.status = True
-				return Article(self.url, self.raw_html)
-			except Exception, e:
+			self.status = True
+			a = Article(self.url, self.raw_html)
+			print a
+			'''except Exception, e:
+				print e
 				self.error_type = "Error in extracting article :"+str(e)
 				self.status_code = -2
 				self.status = False
-				return self.status
-	
+				pass
+				#return self.status
+'''	
 	
 		
 						

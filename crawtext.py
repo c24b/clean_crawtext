@@ -54,17 +54,22 @@ Options:
 '''
 
 __all__ = ['crawtext', 'manager','database', "scheduler", "dispatcher"]
+import os, sys
+
+CRAWTEXT = "crawtext"
+CRAWTEXT_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
+
 
 import __future__
-from docopt import docopt
-from scheduler import Scheduler
-import sys
+
 
 
  
-CRAWTEXT = "crawtext"
+
 if __name__== "__main__":
-		
+	from docopt import docopt
+	from scheduler import Scheduler
+
 	#~ user_input = docopt(__doc__)
 		#~ is_valid = validate_email(user_input['<email>'])
 		#~ if is_valid:

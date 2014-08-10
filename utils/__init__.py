@@ -24,9 +24,9 @@ import time
 import hashlib
 import re
 import os
-import goose
 import codecs
 import urlparse
+from crawtext import CRAWTEXT_DIR
 
 
 class BuildURL(object):
@@ -62,12 +62,11 @@ class BuildURL(object):
 
 
 class FileHelper(object):
-
     @classmethod
     def loadResourceFile(self, filename):
         if not os.path.isabs('filename'):
-            dirpath = os.path.dirname(goose.__file__)
-            path = os.path.join(dirpath, 'resources', filename)
+            dirpath = os.path.join(os.path.dirname(CRAWTEXT_DIR), "V2.04")
+            path = os.path.join(dirpath, 'utils', filename)
         else:
             path = filename
         try:

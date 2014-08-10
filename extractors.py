@@ -31,51 +31,55 @@ RE_LANG = r'^[A-Za-z]{2}$'
 
 class Article(object):
 	'''Article'''
-	def __init__(self, url, raw_html):
+	def __init__(self, url, raw_html, lang="en"):
 		#extraction set
+		#target_language=lang
+		#stopwords_class=lang
+		self.doc = raw_html
+		self.url = url
 		#init parser here defaut parser
-
 		self.parser = Parser()
-		self.extractor = StandardContentExtractor(url,raw_html,self.parser, target_language="en", stopwords_class="en")			
+		extractor = StandardContentExtractor(url, raw_html, self.parser, lang, lang)
 		# init the document cleaner
-		self.cleaner = StandardDocumentCleaner(self, self.parser)
+		cleaner = StandardDocumentCleaner(self, self.parser)
 		# init the output formatter
-		self.formatter = StandardOutputFormatter(self,self.parser, stopwords_class="en")
+		formatter = StandardOutputFormatter(self, self.parser, lang)
 		
 		# TODO
 		# self.article.publish_date = config.publishDateExtractor.extract(doc)
 		# self.article.additional_data = config.get_additionaldata_extractor.extract(doc)
-		self.title = self.extractor.get_title()
-		self.meta_lang = self.extractor.get_meta_lang()
-		self.meta_favicon = self.extractor.get_favicon()
-		self.meta_description = self.extractor.get_meta_description()
-		self.meta_keywords = self.extractor.get_meta_keywords()
-		self.canonical_link = self.extractor.get_canonical_link()
-		self.domain = self.extractor.get_domain()
-		self.tags = self.extractor.extract_tags()
+		self.title = extractor.get_title()
+		self.meta_lang = extractor.get_meta_lang()
+		self.meta_favicon = extractor.get_favicon()
+		self.meta_description = extractor.get_meta_description()
+		self.meta_keywords = extractor.get_meta_keywords()
+		self.canonical_link = extractor.get_canonical_link()
+		self.domain = extractor.get_domain()
+		self.tags = extractor.extract_tags()
 
 		# before we do any calcs on the body itself let's clean up the document
-		self.doc = self.cleaner.clean()
+		self.doc = cleaner.clean()
 
 		# big stuff
-		self.top_node = self.extractor.calculate_best_node()
+		self.top_node = extractor.calculate_best_node()
 		# if we have a top node
 		# let's process it
 		if self.top_node is not None:
             # post cleanup
-			self.top_node = self.extractor.post_cleanup()
+			self.top_node = extractor.post_cleanup()
 
 			# clean_text
-			self.cleaned_text = self.formatter.get_formatted_text()
+			self.cleaned_text = formatter.get_formatted_text()
         # return the article
-		self.links = self.extractor.get_links()
+		self.links = extractor.get_links()
 		self.outlinks_err, self.outlinks = self.extractor.get_outlinks()
-		
+		print self.__dict__
 		
 		
 class ContentExtractor(object):
 	'''class with all the methods for Extracting content'''
 	def __init__(self, url, raw_html, parser, target_language="en", stopwords_class="en"):
+		
 		#~ # parser
 		self.parser = parser
 		#url
@@ -89,9 +93,9 @@ class ContentExtractor(object):
 		self.language = target_language
 
 		# stopwords class
-		self.stopwords_class = stopwords_class
+		#self.stopwords_class = stopwords_class
 		#StopWords
-		self.stopwords = StopWords(stopwords_class)
+		self.stopwords = StopWords(self.language)
 		
 	def get_title(self):
 		"""\

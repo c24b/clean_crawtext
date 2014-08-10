@@ -89,7 +89,10 @@ class Filter(object):
                     if tok not in self.index:
                         self.index[tok] = []
                     self.index[tok].append(rule)
-
+	
+	def get_list(self):
+		return self.index.values()
+		
     def match(self, url, elementtype=None):
         matchlist = []
         tokens = RE_TOK.split(url)

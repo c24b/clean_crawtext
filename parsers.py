@@ -29,7 +29,6 @@ from goose.text import encodeValue
 
 
 class Parser(object):
-
     @classmethod
     def xpath_re(self, node, expression):
         regexp_namespace = "http://exslt.org/regular-expressions"

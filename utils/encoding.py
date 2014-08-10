@@ -2,6 +2,79 @@
 import types
 import datetime
 from decimal import Decimal
+def unique(list_, key=lambda x: x):
+    """efficient function to uniquify a list preserving item order"""
+    seen = set()
+    result = []
+    for item in list_:
+        seenkey = key(item)
+        if seenkey in seen:
+            continue
+        seen.add(seenkey)
+        result.append(item)
+    return result
+
+
+def str_to_unicode(text, encoding=None, errors='strict'):
+    """Return the unicode representation of text in the given encoding. Unlike
+    .encode(encoding) this function can be applied directly to a unicode
+    object without the risk of double-decoding problems (which can happen if
+    you don't use the default 'ascii' encoding)
+    """
+
+    if encoding is None:
+        encoding = 'utf-8'
+    if isinstance(text, str):
+        return text.decode(encoding, errors)
+    elif isinstance(text, unicode):
+        return text
+    else:
+        raise TypeError('str_to_unicode must receive a str or unicode object, got %s' % type(text).__name__)
+
+def unicode_to_str(text, encoding=None, errors='strict'):
+    """Return the str representation of text in the given encoding. Unlike
+    .encode(encoding) this function can be applied directly to a str
+    object without the risk of double-decoding problems (which can happen if
+    you don't use the default 'ascii' encoding)
+    """
+
+    if encoding is None:
+        encoding = 'utf-8'
+    if isinstance(text, unicode):
+        return text.encode(encoding, errors)
+    elif isinstance(text, str):
+        return text
+    else:
+        raise TypeError('unicode_to_str must receive a unicode or str object, got %s' % type(text).__name__)
+
+def re_rsearch(pattern, text, chunk_size=1024):
+    """
+    This function does a reverse search in a text using a regular expression
+    given in the attribute 'pattern'.
+    Since the re module does not provide this functionality, we have to find for
+    the expression into chunks of text extracted from the end (for the sake of efficiency).
+    At first, a chunk of 'chunk_size' kilobytes is extracted from the end, and searched for
+    the pattern. If the pattern is not found, another chunk is extracted, and another
+    search is performed.
+    This process continues until a match is found, or until the whole file is read.
+    In case the pattern wasn't found, None is returned, otherwise it returns a tuple containing
+    the start position of the match, and the ending (regarding the entire text).
+    """
+    def _chunk_iter():
+        offset = len(text)
+        while True:
+            offset -= (chunk_size * 1024)
+            if offset <= 0:
+                break
+            yield (text[offset:], offset)
+        yield (text, 0)
+
+    pattern = re.compile(pattern) if isinstance(pattern, basestring) else pattern
+    for chunk, offset in _chunk_iter():
+        matches = [match for match in pattern.finditer(chunk)]
+        if matches:
+            return (offset + matches[-1].span()[0], offset + matches[-1].span()[1])
+    return None
 
 
 class DjangoUnicodeDecodeError(UnicodeDecodeError):

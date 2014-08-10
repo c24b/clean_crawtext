@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import re
-import os
+import os, sys
 from validate_email import validate_email
 from datetime import datetime
 from utils import yes_no
@@ -13,6 +13,9 @@ import sys
 from multiprocessing import Pool
 import subprocess
 from utils.url import *
+
+
+
 class CrawlJob(object):
 	def __init__(self, job): 
 		self.option = None
