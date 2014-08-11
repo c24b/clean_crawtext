@@ -53,11 +53,34 @@ def encodeValue(value):
 def regexify(string):
 	if string is None:
 		raise AttributeError
-		
-	string = re.sub("or", "|", string.lower())
-	string = re.sub("not", "^", string)
-	string = re.split(' |-|and', string)
-	return "".join(string)
+	operator = re.compile("\s(?P<op>OR|AND|NOT)\s")
+	op_list = [id.group("op") for id in operator.finditer(string)]
+	xpr_tree = []
+	for n in op_list:
+		xpr = re.split(n, string)
+		xpr_tree.append(xpr)
+	
+	#string = re.sub("*\s", ".*?\s\s", string)
+	#string = re.split("\(|\)", string)
+	#string = re.split("or|and|not", string.lower())
+	print xpr_tree, op_list
+	#~ string = re.sub("OR", "|", string)
+	#~ string = re.sub("NOT ","^", string)
+	#~ string = re.sub("AND", ".*?", string)
+	
+	
+	#~ word_list = [id.group('w') for id in word.finditer(string)]
+	#~ print word_list
+	#~ for i,n in enumerate(word_list):
+		#~ print n
+		#~ original_seq = "\s%s\s" %n
+		#~ print original_seq
+		#~ replace_seq = "\s(?P<%s>%s)\s" %(str(i),n)
+		#~ print replace_seq
+		#~ string = re.sub(re.compile(original_seq),re.compile(replace_seq), string)
+		#~ #string = re.sub(" %s ", "(?P<%s>%s)", string) %(n, str(i), n)
+	#return regex
+	#)
 
 class WordStats(object):
 
