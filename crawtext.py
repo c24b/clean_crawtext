@@ -12,7 +12,6 @@ Usage:
 	crawtext.py report <name> 
 	crawtext.py export <name> 
 	crawtext.py delete <name>
-	crawtext.py start <name>
 	crawtext.py <name> -u <email>
 	crawtext.py <name> -q <query>
 	crawtext.py <name> -k set <key>
@@ -24,6 +23,9 @@ Usage:
 	crawtext.py <name> -s delete [<url>]
 	crawtext.py <name> -s delete					
 	crawtext.py <name> -r (<monthly>|<weekly>|<daily>)
+	crawtext.py start <name>
+	crawtext.py list projects
+	crawtext.py list archives
 	crawtext.py (-h | --help)
   	crawtext.py --version
   	

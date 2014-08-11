@@ -20,6 +20,21 @@ class Scheduler(object):
 	
 	def create_from_ui(self, user_input):
 		'''user_input info to job properties'''
+		if user_input["list"] is True:
+			if user_input["archives"] is True:
+				print "Archives Project: "
+				for doc in self.collection.find({"action":"archive"}):
+					print "\t-", doc["name"], doc["start_date"]
+			else:
+				print "Crawl Project: "
+				for doc in self.collection.find({"action":"crawl"}):
+					try:
+						print "\t-", doc["name"], doc["start_date"]
+					except KeyError:
+						print "\n\t-", doc
+						
+			sys.exit()			
+			
 		job = {}
 		job['name'] = user_input['<name>']	
 		job['user'] = None
