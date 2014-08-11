@@ -226,6 +226,9 @@ class Scheduler(object):
 	def activate(self, job):
 		#action_list = ["report", "extract", "export", "archive", "start", "delete"]
 		if job['action'] == "delete":
+			n = [n for n in self.collection.find({"name": job['name']})]
+			if len(n) == 0:
+				return "No project %s has been found. Check the name of your project" %(job['name'])
 			self.collection.remove({"name": job['name']})
 			return "%s has been sucessfully deleted. Results and logs are saved in the database of the project.\nTo see stats type:\n\t python crawtext.py %s report" %(job['name'], job['name'])
 		elif job['action'] == "report":
