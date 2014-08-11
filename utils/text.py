@@ -50,6 +50,14 @@ def encodeValue(value):
         value = string_org
     return value
 
+def regexify(string):
+	if string is None:
+		raise AttributeError
+		
+	string = re.sub("or", "|", string.lower())
+	string = re.sub("not", "^", string)
+	string = re.split(' |-|and', string)
+	return "".join(string)
 
 class WordStats(object):
 

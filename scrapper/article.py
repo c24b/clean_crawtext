@@ -7,36 +7,6 @@ from extractors import StandardContentExtractor
 import datetime
 class Extractor(object):
 	'''Generic Extractor'''	
-	def __init__(self):
-		self.url = url
-		self.lang = lang
-		# title of the article
-		self.title = None
-		#text
-		self.cleaned_text = u""
-		# meta
-		self.meta_description = u""
-		self.meta_lang = u""
-		self.meta_favicon = u""
-		self.meta_keywords = u""
-		#link and domain
-		self.canonical_link = u""
-		self.domain = u""
-		# cleaned text
-		self.top_node = None
-		self.tags = set()
-		self.final_url = url
-		self.raw_html = raw_html
-		# the lxml Document object
-		self.parser = Parser()
-		self.raw_doc = None
-		self.publish_date = None
-		self.additional_data = {}
-		self.links = None
-		self.outlinks = None
-		self.backlinks = None
-		self.inlinks = None
-		self.start_date = datetime.datetime.today()
 	@staticmethod
 	def run(type, url, raw_html):
 		if type == "article":
@@ -45,8 +15,7 @@ class Extractor(object):
 			content = WebPage()
 		else:
 			raise NotImplementedError	
-		#init parser here defaut parser
-		
+		 	
 		return content.get()
 		
 

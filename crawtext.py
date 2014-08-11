@@ -75,7 +75,8 @@ if __name__== "__main__":
 		#~ if is_valid:
 			#~ user_input['<name>'] = user_input['<email>']
 		#~ else:
-			
-	s = Scheduler()
-	print s.schedule(docopt(__doc__))
-	
+	try:		
+		s = Scheduler()
+		print s.schedule(docopt(__doc__))
+	except KeyboardInterrupt:
+		sys.exit()

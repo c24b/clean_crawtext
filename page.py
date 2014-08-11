@@ -26,10 +26,10 @@ from utils.text import regexify
         
 class Page(object):
 	'''Page factory'''
-	def __init__(self, url, query= None, output_format="defaut"):
+	def __init__(self, url, output_format="defaut"):
 		self.url = url
-		if query is not None:
-			self.match_query = regexify(query)
+		#~ if query is not None:
+			#~ self.match_query = regexify(query)
 			
 		self.crawl_date = datetime.datetime.now()
 		self.status = {"msg":None, "status": None, "code": None, "step": None, "url": self.url}

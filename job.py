@@ -132,14 +132,15 @@ class CrawlJob(object):
 			self.send_seeds_to_queue()
 		
 		print "running crawl on %i sources with query '%s'" %(len(self.db.sources.distinct("url")), self.query)
+		print self.match_query
 		start = datetime.now()
 		while self.db.queue.count > 0:	
 			for url in self.db.queue.distinct("url"):
 				if url != "":
-					page = Page(url, self.query)
+					page = Page(url)
 					if page.check() and page.request() and page.control():
 						if page.extract("article"):
-							print page.content.__dict__
+							print page.content.outlinks
 							#if page.is_relevant(self.query):
 							#	print page.content
 								#print page.content.__dict__
