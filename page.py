@@ -21,14 +21,16 @@ from tld import get_tld
 #~ from article import Extractor
 from scrapper import *
 from utils.url import *
-
+from utils.text import regexify
 
         
 class Page(object):
 	'''Page factory'''
-	def __init__(self, url, query= "", output_format="defaut"):
+	def __init__(self, url, query= None, output_format="defaut"):
 		self.url = url
-		self.query = query
+		if query is not None:
+			self.match_query = regexify(query)
+			
 		self.crawl_date = datetime.datetime.now()
 		self.status = {"msg":None, "status": None, "code": None, "step": None, "url": self.url}
 		#~ self.error_type = "Ok"
@@ -125,36 +127,17 @@ class Page(object):
 	
 		return self.status["status"]	
 	
-	def filter(self, query= None, content= None):
-		if query is None:
-			query = self.query
-		if content is None
-			content = self.content
-		chunks = StringSplitter(" |-|\.|OR|or")
-		s_content = chunks.split(content.lower)
+	
+			
+	'''def is_relevant(self, query = None, scope = None):
+		#~ if scope is None:
+			#~ scope = ['title', 'content', 'tags', 'description']
+			
 		
 		
-							
-	def is_relevant(self):
-		'''Bool Decide if page is relevant and match the correct query. Reformat the query properly: supports AND, OR and space'''
-		if self.query is not None:
-			self.query = re.sub('-', ' ', self.query) 
-			if 'OR' in self.query:
-				for each in self.query.split('OR'):
-					query4re = each.lower().replace(' ', '.*')
-					if re.search(query4re, self.article, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE):
-						self.status = True
-						self.error_code = 0
-						self.error_type = None
-						return True
-
-			elif 'AND' in self.query:
-				query4re = self.query.lower().replace(' AND ', '.*').replace(' ', '.*')
-				return bool(re.search(query4re, self.article, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE))
-			#here add NOT operator
-			else:
-				query4re = self.query.lower().replace(' ', '.*')
-				return bool(re.search(query4re, self.article, re.IGNORECASE) or re.search(query4re, self.url, re.IGNORECASE))
+		#~ def regexify(self):
+		#~ def match(self):		
+	'''	
 	
 	def filter(self):
 		if self.is_relevant():
@@ -165,39 +148,5 @@ class Page(object):
 			self.status = False
 		return self.status	
 						 	
-	def bad_status(self):
-		'''create a msg_log {"url":self.url, "error_code": self.req.status_code, "error_type": self.error_type, "status": False,"date": self.crawl_date}'''			
-		return {"url":self.url, "query": self.query, "error_code": self.status_code, "type": self.error_type, "status": False, "date":[self.crawl_date]}
 		
-	def clean_url(self, url):
-		''' utility to normalize url and discard unwanted extension : return a url or None'''
-		#ref tld: http://mxr.mozilla.org/mozilla-central/source/netwerk/dns/effective_tld_names.dat?raw=1
-		#if url in ["#"]:
-		#	print url
-		if url == self.url:
-			return None
-		elif url not in [ "#","/", None, "\n", "",] or url not in 'javascript':
-			self.netloc = urlparse(self.url).netloc
-			uid = urlparse(url)
-			#if next_url is relative take previous url netloc
-			if uid.netloc == "":
-				if len(uid.path) <=1:
-					return None			
-				elif (uid.path[0] != "/" and self.netloc[-1] != "/"):
-					clean_url = "http://"+self.netloc+"/"+uid.path
-				else:
-					clean_url = "http://"+self.netloc+uid.path
-			else:
-				clean_url = url
-			return clean_url
-		else:
-			return None
-				
-	def crawl(self):		
-		if self.check():
-			if self.request():
-				if self.control():
-					if self.extract():
-						print self.__dict__
-		else:
-			print self.bad_status()
+	

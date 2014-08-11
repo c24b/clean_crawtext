@@ -85,7 +85,6 @@ class Article(Extractor):
 		self.start_date = datetime.datetime.today()
 	
 	def get(self):
-		
 		self.doc = self.parser.fromstring(self.raw_html)
 		#init extractor method
 		extractor = StandardContentExtractor(self,"en")	

@@ -13,7 +13,7 @@ import sys
 from multiprocessing import Pool
 import subprocess
 from utils.url import *
-
+from utils.text import regexify
 
 
 class CrawlJob(object):
@@ -30,7 +30,7 @@ class CrawlJob(object):
 		#~ self.logs = self.db.create_coll('logs')
 		#~ self.queue = self.db.create_coll('queue')
 		self.db.create_colls(['sources', 'results', 'logs', 'queue'])	
-		
+		self.match_query = regexify(self.query)
 	
 	def get_bing(self, key="", query=""):
 		''' Method to extract results from BING API (Limited to 5000 req/month) automatically sent to sources DB ''' 
@@ -139,9 +139,16 @@ class CrawlJob(object):
 					page = Page(url, self.query)
 					if page.check() and page.request() and page.control():
 						if page.extract("article"):
-							self.db.queue.insert(page.content.outlinks)
-							self.db.logs.insert(page.content.outlinks_err)
+							print page.content.__dict__
+							#if page.is_relevant(self.query):
+							#	print page.content
+								#print page.content.__dict__
+								#~ self.db.results.insert(page.content)
+								#~ self.db.queue.insert(page.content.outlinks)
+								#~ self.db.logs.insert(page.content.outlinks_err)
 							
+						else:
+							self.db.logs.insert(page.status)	
 							#~ print page.article.outlinks
 						#~ else:
 							#~ print page.status
