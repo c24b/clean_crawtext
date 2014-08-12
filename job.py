@@ -13,8 +13,8 @@ import sys
 from multiprocessing import Pool
 import subprocess
 from utils.url import *
-from utils.query import *
 
+from query import Query
 
 class CrawlJob(object):
 	def __init__(self, job): 
@@ -126,8 +126,8 @@ class CrawlJob(object):
 		if self.query is None:
 			return "Unable to start crawl: no query has been set."
 		else:
-			self.parsed_query = query_parser(self.query)
-			print self.parsed_query
+			query = Query(self.query)
+			
 		seeds = self.collect_sources()
 		if self.db.sources.count() == 0:
 			return "Unable to start crawl: no seeds have been set."
@@ -141,26 +141,25 @@ class CrawlJob(object):
 				if url != "":
 					page = Page(url)
 					if page.check() and page.request() and page.control():
-						if page.extract("article"):
-							print parse(page.content, self.parsed_query)
-							#print page.content.outlinks
-							#if page.is_relevant(self.query):
-							#	print page.content
-								#print page.content.__dict__
-								#~ self.db.results.insert(page.content)
-								#~ self.db.queue.insert(page.content.outlinks)
-								#~ self.db.logs.insert(page.content.outlinks_err)
+						article = page.extract("article")
+						if article.status is True:
 							
+							if article.is_relevant(query):
+								print "Relevant"
+								self.db.results.insert(article.repr())
+								if len(article.outlinks)> 0:
+									self.db.queue.insert(article.outlinks)
 						else:
-							self.db.logs.insert(page.status)	
+							print article.logs["msg"]
+							#self.db.logs.insert(article.logs)
+					else:
+						self.db.logs.insert(page.status)	
 							#~ print page.article.outlinks
 						#~ else:
 							#~ print page.status
 							#~ #self.db.logs.insert(status)
 				self.db.queue.remove({"url": url})
-				#~ if self.db.queue.count() == 0:
-					#~ break
-			#~ 
+				
 				if self.db.queue.count() == 0:		
 					break
 			if self.db.queue.count() == 0:		

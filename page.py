@@ -21,7 +21,7 @@ from tld import get_tld
 #~ from article import Extractor
 from scrapper import *
 from utils.url import *
-from utils.text import regexify
+
 
         
 class Page(object):
@@ -115,38 +115,15 @@ class Page(object):
 			
 	def extract(self, type="article"):
 		'''Dict extract content and info of webpage return boolean and self.info'''	
-		self.status["step"] = "extract %s" %type
-		try:
-			self.content = Extractor.run(type, self.url, self.raw_html)
-			self.status["status"] = True
+		#self.status["step"] = "extract %s" %type
+		return Extractor.run(self.url, self.raw_html, type)
 		
-		except Exception as e:
-			self.status["msg"]="Extraction error %s" %e
-			self.status["code"] = -2
-			self.status["status"] = False
-	
-		return self.status["status"]	
-	
-	
-			
-	'''def is_relevant(self, query = None, scope = None):
-		#~ if scope is None:
-			#~ scope = ['title', 'content', 'tags', 'description']
-			
-		
-		
-		#~ def regexify(self):
-		#~ def match(self):		
-	'''	
-	
-	def filter(self):
-		if self.is_relevant():
-			self.status = True
+	def is_relevant(self, query, content):
+		if query.match(self,unicode(content)) is False:
+			self.status = {"url":self.url, "code": -1, "msg": "Not Relevant","status": False, "title": self.title, "content": self.content}
+			return False
 		else:
-			self.error_type = "Not relevant"
-			self.status_code = -1
-			self.status = False
-		return self.status	
-						 	
+			return True
+							 	
 		
 	

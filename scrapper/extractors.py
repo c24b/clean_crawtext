@@ -1,14 +1,12 @@
-# -*- coding: utf-8 -*-
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
 import re, datetime
 from copy import deepcopy
 from urlparse import urlparse, urljoin
-from utils import StringSplitter
-from utils import StringReplacement
-from utils import ReplaceSequence
-from utils import URLHelper, RawHelper
+from utils.goose import *
 from utils.text import StopWords
 from utils.url import *
-from lxml.cssselect import CSSSelector
+from lxml.cssselect import CSSSelector as CSSSelector
 
 from copy import deepcopy
 from parsers import Parser
@@ -41,7 +39,8 @@ class ContentExtractor(object):
 		#url
 		self.url = article.url
 		#self.doc = self.doc
-		
+		self.links = []
+		self.outlinks = []
 		#self.raw_html = raw_html
 		# article
 		#self.article = article
@@ -155,6 +154,7 @@ class ContentExtractor(object):
 		"""\
 		Extract a given meta content form document
 		"""
+		
 		meta = self.parser.css_select(doc, metaName)
 		content = None
 
@@ -197,11 +197,17 @@ class ContentExtractor(object):
 					return href
 		return self.url
 
-	def get_domain(self):
-		if self.url:
-			o = urlparse(self.article.url)
-			return o.hostname
-		return None
+	def get_domain(self, url=None):
+		if url is not None:
+			checked_url = url
+		elif self.url:
+			checked_url = self.url
+		else:
+			return None
+		
+		o = urlparse(checked_url)
+		return o.hostname
+		
 
 	def extract_tags(self):
 		node = self.article.doc
@@ -222,29 +228,30 @@ class ContentExtractor(object):
 			if tag:
 				tags.append(tag)
 
-		return set(tags)
+		return tags
 
 	def get_links(self):
 		node = self.article.doc
 		select = CSSSelector("a")
-		self.links = [ el.get('href') for el in select(node)]
-		self.links = [n for n in self.links if n is not None or n != ""]
-		return set(self.links)
-
-	def get_outlinks(self,links):
+		links = [ el.get('href') for el in select(node)]
+		links = [n for n in self.links if n is not None or n != ""]
+		return links
+	
+	def get_outlinks(self):
+		links = self.get_links()
+		outlink ={"scope": "outlinks"}
 		self.outlinks = []
-		self.outlinks_err = []
-		outlink = {"status": "", "status_code": "", "error_type": "", "url": "", "scope": "outlinks"}
-		for url in links:
-			url = from_rel_to_absolute_url(url,self.url)
-			outlink["status"], outlink["status_code"], outlink["error_type"], outlink["url"] = check_url(url)
-			
-			if outlink["status"]:
-				self.outlinks.append({"url":outlink["url"]})
-			else:
-				self.outlinks_err.append(outlink)
-		
-		return self.outlinks, self.outlinks_err
+		if len(links) > 0:
+			for url in links:
+				print url
+				url = from_rel_to_absolute_url(url,self.url)
+				
+				outlink["status"], outlink["code"], outlink["msg"], outlink["url"] = check_url(url)
+				if outlink["status"] is True:
+					self.outlinks.append(outlink["url"])
+		#self.outlinks = set(self.outlinks)
+		#~ self.outlinks = [[{"url": url, "domain":self.get_domain(url)} ] for url in self.outlinks]
+			return self.outlinks
 		
 	def get_inlinks(self, links):
 		self.inlinks = []
@@ -258,7 +265,7 @@ class ContentExtractor(object):
 					self.inlinks.append({"url":outlink["url"]})
 				else:
 					self.inlinks_err.append(inlink)
-		return self.inlinks, self.inlinks_err
+		return list(set(self.inlinks)), list(set(self.inlinks_err))
 			
 
 	def calculate_best_node(self):
@@ -326,13 +333,13 @@ class ContentExtractor(object):
 			score = self.get_score(e)
 
 			if score > top_node_score:
-				self.top_node = e
-				self.top_node_score = score
+				top_node = e
+				top_node_score = score
 
 			if top_node is None:
-				self.top_node = e
-
-		return self.top_node
+				top_node = e
+		
+		return top_node
 
 	def is_boostable(self, node):
 		"""\
@@ -535,22 +542,35 @@ class ContentExtractor(object):
 			return False
 		return True
 
-	def post_cleanup(self):
+	def post_cleanup(self, top_node):
 		"""\
 		remove any divs that looks like non-content,
 		clusters of links, or paras with no gusto
 		"""
-		targetNode = self.top_node
-		node = self.add_siblings(targetNode)
-		for e in self.parser.getChildren(node):
-			e_tag = self.parser.getTag(e)
-			if e_tag != 'p':
-				if self.is_highlink_density(e) \
-					or self.is_table_and_no_para_exist(e) \
-					or not self.is_nodescore_threshold_met(node, e):
-					self.parser.remove(e)
-		return node
-
+		try:
+			targetNode = top_node
+			
+			node = self.add_siblings(targetNode)
+			if node is not None:
+				for e in self.parser.getChildren(node):
+					e_tag = self.parser.getTag(e)
+					if e_tag != 'p':
+						if self.is_highlink_density(e) \
+							or self.is_table_and_no_para_exist(e) \
+							or not self.is_nodescore_threshold_met(node, e):
+							self.parser.remove(e)
+				return node
+			else:
+				print "node fails"
+		except Exception, e:
+			print "post_clean_up", e
+		#~ else:
+			#~ text = BeautifulSoup(self.raw.html)
+			#~ title = text.find('h1').text
+			#~ body = [n.text for n in text.findAll('p')]
+			#~ body = "\n".join(body)
+			#~ node = title+"\n"+body	
+			#~ return node
 
 class StandardContentExtractor(ContentExtractor):
 	pass

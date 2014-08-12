@@ -7,7 +7,7 @@ from datetime import datetime
 from abc import ABCMeta, abstractmethod
 #from page2 import Page
 import docopt
-from utils import *
+from utils.goose import *
 from datetime import datetime
 from job import *
 

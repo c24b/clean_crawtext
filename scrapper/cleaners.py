@@ -1,4 +1,4 @@
-from utils import ReplaceSequence
+from utils.goose import ReplaceSequence
 
 
 class DocumentCleaner(object):
