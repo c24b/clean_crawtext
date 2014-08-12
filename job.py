@@ -13,7 +13,7 @@ import sys
 from multiprocessing import Pool
 import subprocess
 from utils.url import *
-from utils.text import regexify
+from utils.query import *
 
 
 class CrawlJob(object):
@@ -30,7 +30,7 @@ class CrawlJob(object):
 		#~ self.logs = self.db.create_coll('logs')
 		#~ self.queue = self.db.create_coll('queue')
 		self.db.create_colls(['sources', 'results', 'logs', 'queue'])	
-		self.match_query = regexify(self.query)
+		
 	
 	def get_bing(self, key="", query=""):
 		''' Method to extract results from BING API (Limited to 5000 req/month) automatically sent to sources DB ''' 
@@ -125,6 +125,9 @@ class CrawlJob(object):
 	def run(self):
 		if self.query is None:
 			return "Unable to start crawl: no query has been set."
+		else:
+			self.parsed_query = query_parser(self.query)
+			print self.parsed_query
 		seeds = self.collect_sources()
 		if self.db.sources.count() == 0:
 			return "Unable to start crawl: no seeds have been set."
@@ -132,7 +135,6 @@ class CrawlJob(object):
 			self.send_seeds_to_queue()
 		
 		print "running crawl on %i sources with query '%s'" %(len(self.db.sources.distinct("url")), self.query)
-		print self.match_query
 		start = datetime.now()
 		while self.db.queue.count > 0:	
 			for url in self.db.queue.distinct("url"):
@@ -140,7 +142,8 @@ class CrawlJob(object):
 					page = Page(url)
 					if page.check() and page.request() and page.control():
 						if page.extract("article"):
-							print page.content.outlinks
+							print parse(page.content, self.parsed_query)
+							#print page.content.outlinks
 							#if page.is_relevant(self.query):
 							#	print page.content
 								#print page.content.__dict__
