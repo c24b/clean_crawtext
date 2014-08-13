@@ -27,7 +27,7 @@ class Query(object):
 			w.delete_document(0)
 			try: 
 				hit = results[0]
-				print hit
+				#print hit
 				return True
 			except IndexError:
 				return False

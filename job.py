@@ -143,15 +143,14 @@ class CrawlJob(object):
 					if page.check() and page.request() and page.control():
 						article = page.extract("article")
 						if article.status is True:
-							
 							if article.is_relevant(query):
-								print "Relevant"
+								
 								self.db.results.insert(article.repr())
-								if len(article.outlinks)> 0:
+								if article.outlinks is not None and len(article.outlinks) > 0:
 									self.db.queue.insert(article.outlinks)
 						else:
 							print article.logs["msg"]
-							#self.db.logs.insert(article.logs)
+							self.db.logs.insert(article.logs)
 					else:
 						self.db.logs.insert(page.status)	
 							#~ print page.article.outlinks

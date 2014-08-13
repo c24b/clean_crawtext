@@ -52,10 +52,9 @@ class Article(Extractor):
 		self.raw_doc = u""
 		self.publish_date = None
 		self.additional_data = {}
-		self.links = None
-		self.outlinks = None
-		self.backlinks = None
-		self.inlinks = None
+		self.links = []
+		self.outlinks = []
+		self.inlinks = []
 		self.start_date = datetime.datetime.today()
 	
 	def get(self):

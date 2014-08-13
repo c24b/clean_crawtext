@@ -6,7 +6,7 @@ from urlparse import urlparse, urljoin
 from utils.goose import *
 from utils.text import StopWords
 from utils.url import *
-from lxml.cssselect import CSSSelector as CSSSelector
+from lxml.cssselect import CSSSelector
 
 from copy import deepcopy
 from parsers import Parser
@@ -232,11 +232,15 @@ class ContentExtractor(object):
 
 	def get_links(self):
 		node = self.article.doc
+		if node is None:
+			node = self.parser(self.article.raw_html)
+			
 		select = CSSSelector("a")
 		links = [ el.get('href') for el in select(node)]
 		links = [n for n in self.links if n is not None or n != ""]
 		return links
-	
+		
+			
 	def get_outlinks(self):
 		links = self.get_links()
 		outlink ={"scope": "outlinks"}
