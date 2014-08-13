@@ -63,22 +63,21 @@ CRAWTEXT_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
 
 
 import __future__
-
+from docopt import docopt
 
 
  
 
 if __name__== "__main__":
-	from docopt import docopt
-	from scheduler import Scheduler
-
+	from worker import Worker
+	
 	#~ user_input = docopt(__doc__)
 		#~ is_valid = validate_email(user_input['<email>'])
 		#~ if is_valid:
 			#~ user_input['<name>'] = user_input['<email>']
 		#~ else:
 	try:		
-		s = Scheduler()
-		print s.schedule(docopt(__doc__))
+		task = Worker()
+		print task.schedule(docopt(__doc__))
 	except KeyboardInterrupt:
 		sys.exit()

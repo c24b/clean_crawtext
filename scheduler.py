@@ -11,8 +11,11 @@ from database import Database
 
 def run_crawtext():
 	w = Worker()
-	for n in w.collection.find():
-		print n
+	for task in w.collection.find():
+		
+		job = w.create_from_database(task)
+		print job["repeat"]
+		
 	#~ db = Database(TASK_MANAGER_NAME)
 	#~ collection = db.use_coll(TASK_COLL)
 	#~ project_list = db.collection.find({"action":{"$or":["crawl", "archives"]})

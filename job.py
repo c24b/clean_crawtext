@@ -15,7 +15,13 @@ import subprocess
 from utils.url import *
 
 from query import Query
-
+		
+class Job(object):
+	def __init__(self, job):
+		self.option = None
+		for k,v in job.items():
+			setattr(self, k, v)
+			
 class CrawlJob(object):
 	def __init__(self, job): 
 		self.option = None
@@ -153,22 +159,17 @@ class CrawlJob(object):
 							self.db.logs.insert(article.logs)
 					else:
 						self.db.logs.insert(page.status)	
-							#~ print page.article.outlinks
-						#~ else:
-							#~ print page.status
-							#~ #self.db.logs.insert(status)
 				self.db.queue.remove({"url": url})
 				
 				if self.db.queue.count() == 0:		
 					break
 			if self.db.queue.count() == 0:		
 					break
-					
-		return "Crawl done succesfully"
-			#~ end = datetime.now()
-			#~ elapsed = end - start
-			#~ print "Crawl done sucessfully:\n-%i results\n-%i non pertinents urls \n-%i errors. \nElapsed time %s" %(len([n for n in self.db.results.find()]), len([n for n in self.db.logs.find()]), len([n for n in self.db.logs.find({"error_code":"-1"})]),elapsed)
-			#~ print "To export results, logs, sources:\n python crawtext.py export %s" %self.name
+		end = datetime.now()
+		elapsed = end - start
+		print "Crawl done sucessfully in %s" %(elapsed)		
+		return "To export results, logs, sources:\n python crawtext.py export %s" %self.name 
+			
 			
 			
 	
