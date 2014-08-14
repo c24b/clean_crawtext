@@ -103,31 +103,30 @@ class Worker(object):
 			else:
 				#print has_job
 				return self.show({"name":job['name']}, "name")
-	def config_next_run(self,job):
-		
-		wait = None
+	
+	def config_next_run(self,job):	
 		next_run = None
 		
 		start_job = job["start_date"]
 		if job["repeat"] == "day":
-			wait = 86400
+			
 			next_run = start_job.replace(day=start_job.day+1)
 			
 		elif job["repeat"] == "week":
-			wait = 604800
+			
 			next_run = start_job.replace(day=start_job.day+7)
 			
 		elif job["repeat"] == "month":
-			wait = 2629743
+			
 			next_run = start_job.replace(month=start_job.month+1)
 			
 		elif job["repeat"] == "year":
-			wait = 31556926
+			
 			next_run = start_job.replace(year=start_job.month+1)
 		else:
-			pass
+			next_run = start_job
 			
-		return wait,next_run
+		return next_run
 			
 	def update_all(self, job):
 		'''updating every job of the project'''
@@ -148,7 +147,7 @@ class Worker(object):
 					new_job['action'] = "crawl"
 					new_job['start_date'] = datetime.now()
 					new_job["repeat"] = "month"
-					new_job["wait"], new_job["next_run"] = self.config_next_run(job)
+					new_job["next_run"] = self.config_next_run
 					self.collection.insert(new_job)
 					return "Sucessfully scheduled a crawl job for project :'%s' with owner '%s'\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'],job['user'], job['name'])
 				else:
@@ -238,7 +237,7 @@ class Worker(object):
 					new_job['action'] = "crawl"
 					new_job['start_date'] = datetime.now()
 					new_job["repeat"] = "month"
-					new_job["wait"], new_job["next_run"] = self.config_next_run(job)
+					new_job["next_run"] = self.config_next_run
 					self.collection.insert(new_job)
 					return "Sucessfully scheduled crawl for project '%s'.\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'], job['name'])
 				else:
@@ -259,7 +258,7 @@ class Worker(object):
 					new_job['action'] = "crawl"
 					new_job['start_date'] = datetime.now()
 					new_job["repeat"] = "month"
-					new_job["wait"], new_job["next_run"] = self.config_next_run(job)
+					new_job["next_run"] = self.config_next_run
 					self.collection.insert(new_job)
 					return "Sucessfully scheduled crawl for project '%s'.\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'], job['name'])
 				else:
