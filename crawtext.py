@@ -12,6 +12,10 @@ Usage:
 	crawtext.py report <name> 
 	crawtext.py export <name> 
 	crawtext.py delete <name>
+	crawtext.py start <name>
+	crawtext.py stop <name>
+	crawtext.py list projects
+	crawtext.py list archives
 	crawtext.py <name> -u <email>
 	crawtext.py <name> -q <query>
 	crawtext.py <name> -k set <key>
@@ -23,9 +27,6 @@ Usage:
 	crawtext.py <name> -s delete [<url>]
 	crawtext.py <name> -s delete					
 	crawtext.py <name> -r <month>
-	crawtext.py start <name>
-	crawtext.py list projects
-	crawtext.py list archives
 	crawtext.py (-h | --help)
   	crawtext.py --version
   	
@@ -69,7 +70,7 @@ from docopt import docopt
  
 
 if __name__== "__main__":
-	from worker import Worker
+	from wk import Worker
 	
 	#~ user_input = docopt(__doc__)
 		#~ is_valid = validate_email(user_input['<email>'])
@@ -77,7 +78,7 @@ if __name__== "__main__":
 			#~ user_input['<name>'] = user_input['<email>']
 		#~ else:
 	try:		
-		task = Worker()
-		print task.schedule(docopt(__doc__))
+		w = Worker()
+		print w.run(docopt(__doc__))
 	except KeyboardInterrupt:
 		sys.exit()
