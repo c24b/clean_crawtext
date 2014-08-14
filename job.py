@@ -28,7 +28,9 @@ class Job(object):
 		self.next_run = self.config_next_run(self.start_date, self.repeat)
 		for k,v in doc.iteritems():
 			setattr(self, k,v)
-			
+		#~ self.db = Database(doc["name"])
+		#~ self.coll = self.db.create_colls("results", "log", "queue")
+		
 	def update(self, values):
 		for k, v in values.iteritems():
 			if k == "repeat":
@@ -128,6 +130,7 @@ class DeleteJob(object):
 			print self.client.drop_database(old_name)
 			print "Deleting projects database %s ." %old_name
 		return True
+
 			 
 class CrawlJob(object):
 	def __init__(self, job): 
@@ -147,7 +150,9 @@ class CrawlJob(object):
 		#~ self.queue = self.db.create_coll('queue')
 		self.db.create_colls(['sources', 'results', 'logs', 'queue'])	
 		
-	
+	def update_seeds(self, data):
+		pass
+		
 	def get_bing(self, key="", query=""):
 		''' Method to extract results from BING API (Limited to 5000 req/month) automatically sent to sources DB ''' 
 		try:
@@ -230,14 +235,12 @@ class CrawlJob(object):
 		else:
 			return False	
 			
-		
 	def send_seeds_to_queue(self):
 		for url in self.db.sources.distinct("url"):
 			if url not in self.db.logs.find({"url": url}):
 				self.db.queue.insert({"url":url})
 		return True
-		
-			
+				
 	def run(self):
 		if self.query is None:
 			print "Unable to start crawl: no query has been set."
