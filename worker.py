@@ -106,12 +106,9 @@ class Worker(object):
 	
 	def config_next_run(self,job):	
 		next_run = None
-		
 		start_job = job["start_date"]
 		if job["repeat"] == "day":
-			
 			next_run = start_job.replace(day=start_job.day+1)
-			
 		elif job["repeat"] == "week":
 			
 			next_run = start_job.replace(day=start_job.day+7)
@@ -122,10 +119,9 @@ class Worker(object):
 			
 		elif job["repeat"] == "year":
 			
-			next_run = start_job.replace(year=start_job.month+1)
+			next_run = start_job.replace(year=start_job.year+1)
 		else:
 			next_run = start_job
-			
 		return next_run
 			
 	def update_all(self, job):
@@ -322,7 +318,7 @@ class Worker(object):
 		if len(job['action']) == 1 and len(job['scope']) == 0:
 			job['action'], = job['action']
 			job['start_date'] = datetime.now()
-			job["wait"], job["next_run"] = self.config_next_run(job)
+			job["next_run"] = self.config_next_run(job)
 			del job['scope']
 			del job['repeat']
 			del job['option']
