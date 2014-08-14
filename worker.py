@@ -51,48 +51,84 @@ class Worker(object):
 		option_list = ['add', 'set', 'append', 'delete', 'expand']
 		job['option'] = [k for k,v in user_input.items() if v is True and k in option_list]
 		
-		job['repeat'] = user_input['<monthly>']
+		job['repeat'] = user_input['<month>']
 		
 		data_list = ['<url>', '<file>', '<query>', '<key>','<email>']
 		for k,v in user_input.items():
 			if v is not None and k in data_list:
 				job[re.sub("<|>", "",k)] = v
-		job['data'] = [[re.sub("<|>", "",k),v] for k,v in user_input.items() if v is not None and k in data_list]
+		#job['data'] = [[re.sub("<|>", "",k),v] for k,v in user_input.items() if v is not None and k in data_list]
 		#job['data_v = [v for k,v in user_input.items() if v is True and k in option_list]
 		return job
 		
 	def create_or_show(self, job):
-		'''show user or show project if project doesn't exists create a new one with defaut params'''
+		'''show user or show project if project doesn't exists create a new one with defaut params
+		return True for show and False for create'''
+		action_list = ["report", "extract", "export", "archive", "start", "delete"]
+		
 		del job['scope']
 		del job['option']
-		del job['data']
 		if job['user'] is not None and job['name'] is None:
 			del job['name']
 			has_user = self.get_one({"user": job['user']})
 			if has_user is None:
-				return "No user '%s' registered." %job['user']
+				print "No user '%s' registered." %job['user']
+				return True
 			else:
 				#print has_user
-				return self.show({"user":job['user']}, "name")
+				print self.show({"user":job['user']}, "name")
+				return True
 		else:
 			del job['user']
 			has_job = self.get_one({"name": job['name']})
 			if has_job is None:
-				print "No project '%s' has been found." %job["name"]
-				if ask_yes_no("Do you want to create a new project?"):
-					new_job = {}
-					new_job["name"] = job["name"]
-					new_job['action'] = "crawl"
-					new_job['start_date'] = datetime.now()
-					new_job["repeat"] = "monthly"
-					self.collection.insert(new_job)
-					return "Sucessfully scheduled a crawl job for project :'%s'\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'], job['name'])
+				if job["name"] not in action_list:
+					print "No project '%s' has been found." %job["name"]
+					if ask_yes_no("Do you want to create a new project?"):
+						new_job = {}
+						new_job["name"] = job["name"]
+						new_job['action'] = "crawl"
+						new_job['start_date'] = datetime.now()
+						new_job["repeat"] = "month"
+						new_job["wait"], new_job["next_run"] = self.config_next_run(job)
+						self.collection.insert(new_job)
+						print "Sucessfully scheduled a crawl job for project :'%s'\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'], job['name'])
+						return False
+					else:
+						return True
 				else:
-					return sys.exit()
+					print "Project can be named '%s' :(  \nBut you can choose a different name! "%("' or '".join(action_list))
+					return True
+					
 			else:
 				#print has_job
 				return self.show({"name":job['name']}, "name")
-	
+	def config_next_run(self,job):
+		
+		wait = None
+		next_run = None
+		
+		start_job = job["start_date"]
+		if job["repeat"] == "day":
+			wait = 86400
+			next_run = start_job.replace(day=start_job.day+1)
+			
+		elif job["repeat"] == "week":
+			wait = 604800
+			next_run = start_job.replace(day=start_job.day+7)
+			
+		elif job["repeat"] == "month":
+			wait = 2629743
+			next_run = start_job.replace(month=start_job.month+1)
+			
+		elif job["repeat"] == "year":
+			wait = 31556926
+			next_run = start_job.replace(year=start_job.month+1)
+		else:
+			pass
+			
+		return wait,next_run
+			
 	def update_all(self, job):
 		'''updating every job of the project'''
 		ex_jobs = self.get_list({"name": job['name']})
@@ -111,8 +147,9 @@ class Worker(object):
 					new_job["name"] = job["name"]
 					new_job['action'] = "crawl"
 					new_job['start_date'] = datetime.now()
-					new_job["repeat"] = "monthly"
-					self.collection.insert(job)
+					new_job["repeat"] = "month"
+					new_job["wait"], new_job["next_run"] = self.config_next_run(job)
+					self.collection.insert(new_job)
 					return "Sucessfully scheduled a crawl job for project :'%s' with owner '%s'\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'],job['user'], job['name'])
 				else:
 					sys.exit()
@@ -121,14 +158,14 @@ class Worker(object):
 				#ex_jobs = self.collection.find({"name": job.name}, {"user":{"$exists": False}})
 				for doc in ex_jobs:
 					self.collection.update({"_id": doc['_id']}, {"$set":{"user": job['user']}})
-					self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})
+					#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})
 				return "Every job of the project '%s' are now belonging to %s."%(job['name'], job['user'])
 			
 			
 		else:#job['scope'] == "r"
 			
 			if ex_jobs is None:
-				print "No project '%s' found.\n" %(job['name'], job['repeat'])
+				print "No project '%s' found.\n" %(job['name'])
 				#print self.get_list({"name": job['name']})
 				if ask_yes_no("Do you want to create a new project?"):
 					new_job = {}
@@ -136,7 +173,8 @@ class Worker(object):
 					new_job["name"] = job["name"]
 					new_job['action'] = "crawl"
 					new_job['start_date'] = datetime.now()
-					new_job["repeat"] = "monthly"
+					new_job["repeat"] = "month"
+					new_job["wait"], new_job["next_run"] = self.config_next_run(job)
 					self.collection.insert(new_job)
 					return "Project %s has been successfully created and scheduled %s!\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'], job['repeat'], job['name'])
 				else:
@@ -144,9 +182,10 @@ class Worker(object):
 			else:
 				#print job.items()	
 				for doc in ex_jobs:
-					self.collection.update({"_id": doc['_id']}, {"$set":{"repeat":job['repeat']}})
-					self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
-				return "Every job of the project '%s' will be executed %s."%(job['name'], job['repeat'])
+					job["wait"], job["next_run"] = self.config_next_run(doc)
+					self.collection.update({"_id": doc['_id']}, {"$set":{"repeat":job['repeat'], "wait": job["wait"], "next_run": job["next_run"]}})
+					#self.collection.update({"_id": doc['_id']}, {"date":{"$push": datetime.today}})	
+				return "Every job of project '%s' will be executed every %s."%(job['name'], job['repeat'])
 	
 	def set_sources(self, job):
 		
@@ -198,7 +237,8 @@ class Worker(object):
 					new_job["name"] = job["name"]
 					new_job['action'] = "crawl"
 					new_job['start_date'] = datetime.now()
-					new_job["repeat"] = "monthly"
+					new_job["repeat"] = "month"
+					new_job["wait"], new_job["next_run"] = self.config_next_run(job)
 					self.collection.insert(new_job)
 					return "Sucessfully scheduled crawl for project '%s'.\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'], job['name'])
 				else:
@@ -218,7 +258,8 @@ class Worker(object):
 					new_job["name"] = job["name"]
 					new_job['action'] = "crawl"
 					new_job['start_date'] = datetime.now()
-					new_job["repeat"] = "monthly"
+					new_job["repeat"] = "month"
+					new_job["wait"], new_job["next_run"] = self.config_next_run(job)
 					self.collection.insert(new_job)
 					return "Sucessfully scheduled crawl for project '%s'.\n\t1/To see default parameters of the project:\n\tpython crawtext.py %s\n\t2/To add more parameters see help and options \n\tpython crawtext.py --help" %(job['name'], job['name'])
 				else:
@@ -242,6 +283,7 @@ class Worker(object):
 					return "Sucessfully added key \"%s\" for crawl job in project '%s'\nA crawl job needs a query and seeds to be active.\n\nSee crawtext.py --help on how to activate the crawl adding a query" %(job['key'], job['name'])			
 		else:#job.scope == "s"
 			return self.set_sources(job)
+	
 	def activate(self, job):
 		#action_list = ["report", "extract", "export", "archive", "start", "delete"]
 		if job['action'] == "delete":
@@ -249,7 +291,8 @@ class Worker(object):
 			if len(n) == 0:
 				return "No project %s has been found. Check the name of your project" %(job['name'])
 			self.collection.remove({"name": job['name']})
-			return "%s has been sucessfully deleted. Results and logs are saved in the database of the project.\nTo see stats type:\n\t python crawtext.py %s report" %(job['name'], job['name'])
+			#here change name to archives_db_name_date
+			return "%s has been sucessfully deleted. Results and logs are saved in the database of the project.\nTo see stats type:\n\t python crawtext.py %s report\nTo have direct acess to database, type:\n\t mongo %s\n\t>db.results.find()\n\t>db.logs.find()\n\t>db.sources.find()" %(job['name'], job['name'])
 		elif job['action'] == "report":
 			r = ReportJob(job)
 			return r.run()
@@ -258,13 +301,15 @@ class Worker(object):
 			return e.run()
 		elif job['action'] == "archive":
 			a = ArchiveJob(job)
-			return os.spawnl(os.P_DETACH, a.run())	
+			os.spawnl(os.P_NOWAIT, a.run())
+			return "Archiving %s. A email will be sent when finished" %job["url"]
 		elif job['action'] == "start":
 			has_job = self.collection.find_one({"name": job['name'], "action":"crawl"})
 			if has_job is not None:
 				c = CrawlJob(has_job)
-				return c.run()
-				#return os.spawnl(os.P_NOWAIT, c.run())
+				#return c.run()
+				os.spawnl(os.P_NOWAIT, c.run())
+				return "Crawling %s. An email will be sent when finished" %job["name"]
 			else:
 				return "Job project not properly configured.\n Type python crawtext.py %s to see parameters" %self.name
 		else:
@@ -278,37 +323,35 @@ class Worker(object):
 		if len(job['action']) == 1 and len(job['scope']) == 0:
 			job['action'], = job['action']
 			job['start_date'] = datetime.now()
+			job["wait"], job["next_run"] = self.config_next_run(job)
 			del job['scope']
 			del job['repeat']
-			del job['data']
 			del job['option']
-			return self.activate(job)
+			self.activate(job)
 		#udpate
 		elif len(job['scope']) == 1:
 			
 			job['scope'], = job['scope']
 			#update every project
 			if job['scope'] in ['u', 'r']:
-				del job['repeat']
-				del job['data']
 				del job['option']
 				return self.update_all(job)
 				 
 			#udpate crawl
 			else:
-				del job['repeat']
-				del job['data']
+				
 				try:
 					job['option'], = job['option']
 				except ValueError:
 					del job['option']
-					
 				return self.update_crawl(job)
 		#create or show
 		else:
-			return self.create_or_show(job)
+			if self.create_or_show(job) is False:
+				self.activate(job)
+			return 
 			
-
+		
 	def delete(self, project_name):
 		'''Delete existing project'''
 		job_list = self.get_list(project_name)
@@ -385,9 +428,9 @@ class Worker(object):
 				
 			return "" 			
 		
-	
+	'''
 	def run_job(self, job_name=None):
-		'''Execute tasks from Job Database'''
+		Execute tasks from Job Database
 		if job_name is None:
 			project_list = self.get_list()
 			for n in project_list:
@@ -406,3 +449,4 @@ class Worker(object):
 				return j2.run()
 				#except NotImplementedError:
 				#	pass
+	'''
