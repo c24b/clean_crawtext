@@ -6,7 +6,7 @@ Description:
 A simple crawler in command line.
 
 Usage:
-	crawtext.py archive [ -f (default|wiki|forum) ] <url>
+	crawtext.py archive [ -f <format> ] <url>
 	crawtext.py <name>
 	crawtext.py <user>
 	crawtext.py report <name> 

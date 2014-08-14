@@ -131,6 +131,7 @@ class Worker(object):
 			self.task_list = None
 			return 0
 		else:
+			self.task = [n for n in self.task_list]
 			return len(self.task_list)	
 			
 	def show_tasks(self, query, order):
@@ -146,7 +147,12 @@ class Worker(object):
 			print "No task for %s"% query.value(order)
 			
 	def update_task(self, doc, action="crawl", scope="s"):
-		'''adding more info to one specific task'''
+		self.select_task(self, {"name":doc["name"], "action": action})
+		if self.task_list == 1:
+			doc = self.task[0]
+			#c = CrawlJob(doc)
+			#c.update_values()
+			#c.set_sources()
 		pass
 	
 	def update_project(self, doc):
@@ -167,8 +173,7 @@ class Worker(object):
 	
 	def refresh_task(self, name, action="crawl"):
 		'''after a run update the last_run and set nb_run how to log msg?'''
-		pass
-	
+		pass	
 	def delete_project(self, doc):
 		'''delete project and archive results'''
 		#Results and logs are saved in the database of the project.\nTo see stats type:\n\t python crawtext.py %s report\nTo have direct acess to database, type:\n\t mongo %s\n\t>db.results.find()\n\t>db.logs.find()\n\t>db.sources.find()" %(job['name'], job['action'])
@@ -205,11 +210,14 @@ class Worker(object):
 			
 		return "Task %s of project %s has been sucessfully deleted" %(job["action"] job["name"], job["repeat"])
 	def execute_task(self):
-		'''run specific task'''
+		#j = Job(self, job)
+		#j.run()
 		pass
-		
-	
-			 			
+	def execute_project(self):
+		#Crawl or Archive
+		#Report
+		#Export
+		pass
 	def run(self, user_input):
 		'''main execution from cmdline'''
 		job = self.create_from_ui(user_input)
