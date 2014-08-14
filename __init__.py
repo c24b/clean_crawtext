@@ -55,7 +55,7 @@ Options:
 	
 '''
 
-__all__ = ['crawtext', 'manager','database', "scheduler", "dispatcher"]
+__all__ = ['crawtext', 'manager','database', "scrapper", "dispatcher"]
 import os, sys
 
 CRAWTEXT = "crawtext"
@@ -77,7 +77,7 @@ if __name__== "__main__":
 			#~ user_input['<name>'] = user_input['<email>']
 		#~ else:
 	try:		
-		task = Worker()
-		print task.schedule(docopt(__doc__))
+		w = Worker()
+		print w.run(docopt(__doc__))
 	except KeyboardInterrupt:
 		sys.exit()
