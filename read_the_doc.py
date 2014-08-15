@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-'''Crawtext.
+CMD_DOC ='''Crawtext.
 Description:
 A simple crawler in command line.
 
@@ -29,7 +29,7 @@ Usage:
 	crawtext.py <name> -r <month>
 	crawtext.py (-h | --help)
   	crawtext.py --version
-  	
+
 Options:
 	Projets:
 	# Pour consulter un projet : 	crawtext.py pesticides
@@ -55,30 +55,3 @@ Options:
 	Executer un projet								crawtext.py run pesticides
 	
 '''
-
-__all__ = ['crawtext', 'manager','database', "scheduler", "dispatcher"]
-import os, sys
-
-CRAWTEXT = "crawtext"
-CRAWTEXT_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
-
-
-import __future__
-from docopt import docopt
-
-
- 
-
-if __name__== "__main__":
-	from wk import Worker
-	
-	#~ user_input = docopt(__doc__)
-		#~ is_valid = validate_email(user_input['<email>'])
-		#~ if is_valid:
-			#~ user_input['<name>'] = user_input['<email>']
-		#~ else:
-	try:		
-		w = Worker()
-		print w.task_from_ui(docopt(__doc__))
-	except KeyboardInterrupt:
-		sys.exit()

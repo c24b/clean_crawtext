@@ -6,16 +6,12 @@ Description:
 A simple crawler in command line.
 
 Usage:
-	crawtext.py archive [ -f <format> ] <url>
+	crawtext.py archive [ -f (default|wiki|forum) ] <url>
 	crawtext.py <name>
 	crawtext.py <user>
 	crawtext.py report <name> 
 	crawtext.py export <name> 
 	crawtext.py delete <name>
-	crawtext.py start <name>
-	crawtext.py stop <name>
-	crawtext.py list projects
-	crawtext.py list archives
 	crawtext.py <name> -u <email>
 	crawtext.py <name> -q <query>
 	crawtext.py <name> -k set <key>
@@ -27,6 +23,9 @@ Usage:
 	crawtext.py <name> -s delete [<url>]
 	crawtext.py <name> -s delete					
 	crawtext.py <name> -r <month>
+	crawtext.py start <name>
+	crawtext.py list projects
+	crawtext.py list archives
 	crawtext.py (-h | --help)
   	crawtext.py --version
   	
@@ -56,7 +55,7 @@ Options:
 	
 '''
 
-__all__ = ['crawtext', 'manager','database', "scheduler", "dispatcher"]
+__all__ = ['crawtext', 'manager','database', "scrapper", "dispatcher"]
 import os, sys
 
 CRAWTEXT = "crawtext"
@@ -70,7 +69,7 @@ from docopt import docopt
  
 
 if __name__== "__main__":
-	from wk import Worker
+	from worker import Worker
 	
 	#~ user_input = docopt(__doc__)
 		#~ is_valid = validate_email(user_input['<email>'])
@@ -79,6 +78,6 @@ if __name__== "__main__":
 		#~ else:
 	try:		
 		w = Worker()
-		print w.task_from_ui(docopt(__doc__))
+		print w.run(docopt(__doc__))
 	except KeyboardInterrupt:
 		sys.exit()

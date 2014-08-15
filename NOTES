@@ -1,0 +1,22 @@
+NOTES TO MYSELF
+
+1. en crontab ou scheduler en bg python scheduler.py nohup python ChatServer_Listen.py & 
+2. Vérifier que le process n'est pas encore en train de tourner
+2. scheduler ouvre la base de données:
+pour chaque projet
+1. verifie la date d'execution
+2. verifie le repeat
+3. check si il doit lancer ou pas
+4. If yes run
+5. quand terminé update la BDD en ajoutant le nombre de run et la date du dernier run
+
+
+6. Par défaut lors de la création du script le lance une première fois en bg
+
+7. Envoi un mail quand c'est fini si user exists
+
+8 if delete rename database into DBNAME_archives_
+#Celery
+pip install -U celery[mongodb]
+BROKER_URL = 'mongodb://localhost:27017/database_name'
+
