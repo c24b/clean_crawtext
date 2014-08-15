@@ -19,7 +19,7 @@ class Worker(object):
 	
 	def __init__(self):
 		self.db = Database(TASK_MANAGER_NAME)
-		self.coll = self.db.use_coll(TASK_COLL)
+		self.collection = self.db.use_coll(TASK_COLL)
 	
 		
 	def task_from_ui(self, user_input):
@@ -44,6 +44,7 @@ class Worker(object):
 		
 		if self.task.action == "create_or_show":
 			#create_andschedule or show a defaut crawl job if exists
+			self.select_task({"name": self.task.name})
 			self.task.action = "crawl"
 			if self.task_list is not None:
 				return self.show_task()
@@ -185,10 +186,12 @@ class Worker(object):
 			return "Task %s of project %s has been sucessfully deleted." 
 			
 		return "Task %s of project %s has been sucessfully deleted" %(self.task.action, self.task.name)
+	
 	def run_task(self, wait=3*60):
 		#j = Job(self, job)
 		#j.run()
 		pass
+		
 	def run_project(self):
 		#Crawl or Archive
 		#Report
