@@ -16,12 +16,11 @@ from task import Task
 
 class Worker(object):
 	''' main access to Job Database'''
-	_db = Database(TASK_MANAGER_NAME)
-	_coll = self._db.use_coll(TASK_COLL)
 	
 	def __init__(self):
-		'''init the project base with db and collections'''
-		pass
+		self.db = Database(TASK_MANAGER_NAME)
+		self.coll = self._db.use_coll(TASK_COLL)
+	
 		
 	def task_from_ui(self, user_input):
 		'''mapping user input into task return job parameters'''
