@@ -93,6 +93,7 @@ class Worker(object):
 			
 			self.schedule_task()
 			self.run_task()
+			return "Sucessfully created '%s' task for project '%s'."%(self.task.action,self.task.name)
 		else: sys.exit()
 	
 	def select_task(self, query):
@@ -107,18 +108,27 @@ class Worker(object):
 				task = "task"
 			else:
 				task = "tasks"
-			print len(self.task_list), "%s stored in %s database for %s:'%s'"%(task, str(TASK_MANAGER_NAME), str(query.keys()[0]), str(query.values()[0]))
+			print len(self.task_list), "\n%s stored in %s database for %s:'%s'"%(task, str(TASK_MANAGER_NAME), str(query.keys()[0]), str(query.values()[0]))
 			return len(self.task_list)	
 			
 	def show_task(self):
 		if self.task_list > 0:
 			#print "%s: %s"%(order.capitalize(), query[str(order)])
+			
+			print "\n"
+			print self.task.name.upper()
+			print "____________________\n"
 			for task in self.task_list:
+				print "> ", task["action"],":\n"
+				print "  parameters"
+				print "--------------"
 				for k,v in task.items():
-					if k == '_id':
+					if k == '_id' or k =="action" or k == "name":
 						continue
 					if v is not False or v is not None:
-						print k+":", v	
+						print k+":", v
+				print "--------------"
+			return "____________________"
 		else:
 			print "No task for %s"% self.task.name
 			
@@ -190,7 +200,7 @@ class Worker(object):
 	def run_task(self, wait=3*60):
 		#j = Job(self, job)
 		#j.run()
-		pass
+		return "Current %s  for project %s will be running in 3 minutes.\n An email will be sent when job is finished"%(self.task.action, self.task.name)
 		
 	def run_project(self):
 		#Crawl or Archive
