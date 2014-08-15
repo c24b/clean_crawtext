@@ -90,6 +90,7 @@ class Worker(object):
 	def create_task(self):
 		'''create one specific task'''
 		if ask_yes_no("Do you want to create a new project?"):
+			
 			self.schedule_task()
 			self.run_task()
 		else: sys.exit()
@@ -165,8 +166,8 @@ class Worker(object):
 	def schedule_task(self):
 		'''schedule task inserting into db'''
 		self.task.first_run = 4*60
-		self.collection.insert(self.task)
-		return "%s on project %s has been sucessfully scheduled to be run next %s" %(self.action, self.name, self.repeat)
+		self.collection.insert(self.task.__dict__)
+		return "%s on project %s has been sucessfully scheduled to be run next %s" %(self.task.action, self.task.name, self.task.repeat)
 	def schedule_project(self):
 		'''schedule complete tasks set for one crawl inserting into db'''
 		for action in ["crawl", "report", "export"]:
