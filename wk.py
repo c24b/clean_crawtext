@@ -108,7 +108,7 @@ class Worker(object):
 				task = "task"
 			else:
 				task = "tasks"
-			print len(self.task_list), "\n%s stored in %s database for %s:'%s'"%(task, str(TASK_MANAGER_NAME), str(query.keys()[0]), str(query.values()[0]))
+			print "\n", len(self.task_list), "%s stored in %s database for %s:'%s'"%(task, str(TASK_MANAGER_NAME), str(query.keys()[0]), str(query.values()[0]))
 			return len(self.task_list)	
 			
 	def show_task(self):
