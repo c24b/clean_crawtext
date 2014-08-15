@@ -34,3 +34,12 @@ scheduler.pyc
 task.pyc
 wk.pyc
 worker.pyc
+crawtext.pyc
+job.pyc
+page.pyc
+query.pyc
+read_the_doc.pyc
+scheduler.pyc
+task.pyc
+wk.pyc
+worker.pyc
