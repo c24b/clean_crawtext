@@ -11,7 +11,10 @@ from utils.goose import *
 from datetime import datetime
 from job import *
 from utils import ask_yes_no
+from utils import validate_email
+from utils.more_utils import validate_url
 
+from task import Task
 class Worker(object):
 	''' main access to Job Database'''
 	def __init__(self):
@@ -30,29 +33,37 @@ class Worker(object):
 
 	def task_from_ui(self, user_input):
 		'''mapping user input into task return job parameters'''
-		job = {} 
-		job['name'] = user_input['<name>']	
+		t = Task(user_input['<name>'])
 		
+		#~ job = {} 
+		#~ job['name'] = user_input['<name>']	
 		
-		if validate_email(job['name']) is True:
+		if validate_email(t.name) is True:
+		#if validate_email(job['name']) is True:
 			#user interrogation
 			#user_projects = self.collection.find({"user": job["name"]}):
-			self.select_tasks({"user": job["name"]})
+			self.select_tasks({"user": t.name})
+			#self.select_tasks({"user": job["name"]})
 			if len(self.task_list) == 0:
 				print "User %s is not registered.No projects belonging to %s have bee found" %(job["name"],job["name"])
 			else:
-				self.show_tasks({"user": job["name"]}, "user")
+				self.show_tasks({"user": t.name}, "user")
+				#self.show_tasks({"user": job["name"]}, "user")
 			sys.exit()
-		
-		elif is_valid_url(job['name']) is True:
+		elif validate_url(t.name) is True:
+			t.action = "archive"
+		#elif is_valid_url(job['name']) is True:
 			#archive interrogation
-			archive_project = self.collection.find({"url": job["name"]}):
-			self.select_tasks({"action": "archive", "url":job["name"]}, "action"})
-			if len(self.task_list) == 0:
-				print "Site %s is not archived.\nTo archive a new site type: python crawtext.py archive %s" %(job["name"], job["name"])
+			#archive_project = self.collection.find({"url": job["name"]}):
+			self.select_tasks({"action": t.action, "url":t.name})
+			#self.select_tasks({"action": "archive", "url":job["name"]}, "action"})
+			if self.task_list is None:
+				print "Site %s is not archived.\nTo archive a new site type: python crawtext.py archive %s" %(t.name, t.name)
+				#print "Site %s is not archived.\nTo archive a new site type: python crawtext.py archive %s" %(job["name"], job["name"])
 				sys.exit()	
 			else:
-				self.create_task(job, "archive")
+				self.schedule_task(t)
+				#self.create_task(job, "archive")
 		#task interrogation
 		else:	
 			#action
@@ -75,7 +86,7 @@ class Worker(object):
 					print "Udpating",scope
 					for k,v in user_input.items():
 						if k in ["email", "month"]:
-							if v is not None or v = "":
+							if v is not None or v != "":
 								job[k] = v
 					return self.update_project(job["name"], job)
 				else:
@@ -110,7 +121,7 @@ class Worker(object):
 	def task_from_db(self, query):
 		self.select_tasks(query)
 		if self.task_list is not None:
-			return [Task(t.items) for t in self.task_list]
+			return [Task(t.name, t.action) for t in self.task_list]
 		else:
 			print "No task with this query"	
 				
@@ -126,11 +137,16 @@ class Worker(object):
 	def select_tasks(self, query):
 		'''show tasks that match the filter with a specific order return the set of tasks'''
 		self.task_list = [t for t in self.collection.find(query)]
-		print len(self.task_list), "tasks stored in database :",str(TASK_MANAGER_NAME)
+		
 		if len(self.task_list) == 0:
 			self.task_list = None
 			return 0
 		else:
+			if len(self.task_list) == 1:
+				task = "task"
+			else:
+				task = "tasks"
+			print len(self.task_list), "%s stored in %s database for %s:'%s'"%(task, str(TASK_MANAGER_NAME), str(query.keys()[0]), str(query.values()[0]))
 			self.task = [n for n in self.task_list]
 			return len(self.task_list)	
 			
@@ -159,17 +175,17 @@ class Worker(object):
 		self.project_name = doc["name"]
 		del doc["name"]
 		del doc["action"]
-		self.select_task(self,{"name": doc["name"]}
+		self.select_task({"name": doc["name"]}, "name")
 		#values = [[k, v] for k,v in doc.items() if k != "name"]
 		if self.task_list is not None:
 			for t in self.task_list:
 				for k,v in doc.items():
-					if v is not None or v not False:
-						self.collection.update(t["_id"],{"$set":{k, v})
+					if v is not None or v is not False:
+						self.collection.update(t["_id"],{"$set":{k, v}})
 			print "Succesfully updated project %s with new params" %self.project_name
 		else:
 			print "No project %s found."%self.project_name
-		else
+		
 	
 	def refresh_task(self, name, action="crawl"):
 		'''after a run update the last_run and set nb_run how to log msg?'''
@@ -177,7 +193,7 @@ class Worker(object):
 	def delete_project(self, doc):
 		'''delete project and archive results'''
 		#Results and logs are saved in the database of the project.\nTo see stats type:\n\t python crawtext.py %s report\nTo have direct acess to database, type:\n\t mongo %s\n\t>db.results.find()\n\t>db.logs.find()\n\t>db.sources.find()" %(job['name'], job['action'])
-		self.select_tasks({"name":job["name"})
+		self.select_tasks({"name":job["name"]}, "name")
 		if self.task_list is None:
 			return "No project %s found. Project can't be deleted" %job["name"]
 		for t in self.task_list:
@@ -208,7 +224,7 @@ class Worker(object):
 			#here change name to archives_db_name_date
 			return "Task %s of project %s has been sucessfully deleted." 
 			
-		return "Task %s of project %s has been sucessfully deleted" %(job["action"] job["name"], job["repeat"])
+		return "Task %s of project %s has been sucessfully deleted" %(job["action"], job["name"], job["repeat"])
 	def execute_task(self):
 		#j = Job(self, job)
 		#j.run()
@@ -220,8 +236,8 @@ class Worker(object):
 		pass
 	def run(self, user_input):
 		'''main execution from cmdline'''
-		job = self.create_from_ui(user_input)
-		
+		job = self.task_from_ui(user_input)
+		print job
 		#no action declared so defaut is set to crawl
 		if job["action"] is None:
 			self.select_tasks({"name": job["name"]})
