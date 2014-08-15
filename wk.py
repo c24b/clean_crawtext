@@ -165,7 +165,7 @@ class Worker(object):
 		'''schedule task inserting into db'''
 		self.task.first_run = 4*60
 		self.collection.insert(self.task)
-		return "%s on project %s has been sucessfully scheduled to be run next %s" %(job["action"], job["name"], job["repeat"])
+		return "%s on project %s has been sucessfully scheduled to be run next %s" %(self.action, self.name, self.repeat)
 	def schedule_project(self):
 		'''schedule complete tasks set for one crawl inserting into db'''
 		for action in ["crawl", "report", "export"]:
