@@ -34,88 +34,34 @@ class Worker(object):
 		self.map_doc()
 		
 	def process(self):
-		 
-						
-		if validate_email(t.name) is True:
-		#if validate_email(job['name']) is True:
-			#user interrogation
-			#user_projects = self.collection.find({"user": job["name"]}):
-			self.select_tasks({"user": t.name})
-			#self.select_tasks({"user": job["name"]})
-			if len(self.task_list) == 0:
-				print "User %s is not registered.No projects belonging to %s have bee found" %(job["name"],job["name"])
+		if self.task.action == "create_or_show":
+			#create_andschedule or show a defaut crawl job if exists
+			self.task.action = "crawl"
+			if self.task_list is not None:
+				return self.show_tasks({"action":"crawl", "name": self.task.name}, "name")
 			else:
-				self.show_tasks({"user": t.name}, "user")
-				#self.show_tasks({"user": job["name"]}, "user")
-			sys.exit()
-		elif validate_url(t.name) is True:
-			t.action = "archive"
-		#elif is_valid_url(job['name']) is True:
-			#archive interrogation
-			#archive_project = self.collection.find({"url": job["name"]}):
-			self.select_tasks({"action": t.action, "url":t.name})
-			#self.select_tasks({"action": "archive", "url":job["name"]}, "action"})
-			if self.task_list is None:
-				print "Site %s is not archived.\nTo archive a new site type: python crawtext.py archive %s" %(t.name, t.name)
-				#print "Site %s is not archived.\nTo archive a new site type: python crawtext.py archive %s" %(job["name"], job["name"])
-				sys.exit()	
-			else:
-				t.update(user_input)
-				print t.__dict__
-				self.schedule_task(t)
-				#self.create_task(job, "archive")
-		#task interrogation
-		else:	
-			#action
-			action_list = ["report", "extract", "export", "archive", "start","stop", "delete","list"]
-			job['action'] = [k for k,v in user_input.items() if v is True and k in action_list]
-			#crawl config
-			if len(job['action']) == 0:
-				scope_list = ["-u", "-r", "-q", "-k", "-s"]
-				job["udpate"] = [re.sub("-", "",k) for k,v in user_input.items() if v is True and k in scope_list]
-				if len(job["update"]) == 0:
-					#no udpate
-					#create or show
-					self.select_tasks(self,{"action":crawl, "name": job["name"]})
-					if self.task_list is None:
-						new_job = self.create_task(job, "crawl")
-						#job["next_run"] = +2minutes
-						return self.schedule_task(new_job)
-						
-				elif scope in scope_list[0:1]:
-					print "Udpating",scope
-					for k,v in user_input.items():
-						if k in ["email", "month"]:
-							if v is not None or v != "":
-								job[k] = v
-					return self.update_project(job["name"], job)
-				else:
-					print "Update crawl" 
-					job["scope"] = [re.sub("-", "",k) for k,v in user_input.items() if v is True and k in scope_list[2:]]
-					option_list = ['add', 'set', 'append', 'delete', 'expand']
-					job['option'] = [k for k,v in user_input.items() if v is True and k in option_list]
-					if len(job['option']) == 0:
-						if self.task_list is not None:
-							return self.show_tasks({"action":crawl, "name": job["name"]}, "name")
-						else:
-							return "No project %s with active crawl found" %job["name"]
-					else:		
-						data_list = ['<url>', '<file>', '<query>', '<key>']
-						for k,v in user_input.items():
-							if v is not None and k in data_list:
-								job[re.sub("<|>", "",k)] = v
-						self.update_task(job, crawl, scope)		
-						
-			elif job["action"] == "archive":
-				job["format"] = format
-				job["url"] = url
-				job["name"] = url
-				job["start_date"] = datetime.today
-				#job["next_run"] = +2minutes
-				return self.schedule_task(job)
-			else:
-				#execute immediately the task without scheduling it
-				return Task.run(job["action"], job["name"])
+				self.schedule() #scheduling self.task
+				#run in 4 minutes
+				return "Sucessfully scheduled crawl job for project%s" %self.task.name
+		elif self.action == "udpate_all":
+			#self.udpate_all() with self.project_data.values
+		elif self.action == "udpate_crawl":
+			#self.udpate_crawl() with self.crawl_data.values and self.option	 
+		elif self.action == "user":
+			#show user if exists
+		elif self.action == "archive":
+			#create and schedule or show a new archive job 	
+		else:
+			#action directly handle task with no schedule
+			if self.action == "start":
+			elif self.action == "stop":
+			elif self.action == "delete":
+			elif self.action == "list":
+			elif self.action == "report":
+			elif self.action == "export":
+			return ActionJob()
+			#return eval(str(self.action).capitalize+"()")
+			#return Task.run(job["action"], job["name"])
 			
 	
 	def task_from_db(self, query):
