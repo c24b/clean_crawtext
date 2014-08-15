@@ -108,13 +108,12 @@ class Worker(object):
 			else:
 				task = "tasks"
 			print len(self.task_list), "%s stored in %s database for %s:'%s'"%(task, str(TASK_MANAGER_NAME), str(query.keys()[0]), str(query.values()[0]))
-			self.task = [n for n in self.task_list]
 			return len(self.task_list)	
 			
 	def show_task(self):
 		if self.task_list > 0:
 			#print "%s: %s"%(order.capitalize(), query[str(order)])
-			for task in self.task:
+			for task in self.task_list:
 				for k,v in task.items():
 					if k == '_id':
 						continue
