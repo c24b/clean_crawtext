@@ -19,7 +19,7 @@ class Worker(object):
 	
 	def __init__(self):
 		self.db = Database(TASK_MANAGER_NAME)
-		self.coll = self._db.use_coll(TASK_COLL)
+		self.coll = self.db.use_coll(TASK_COLL)
 	
 		
 	def task_from_ui(self, user_input):
