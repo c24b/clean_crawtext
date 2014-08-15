@@ -79,6 +79,6 @@ if __name__== "__main__":
 		#~ else:
 	try:		
 		w = Worker()
-		print w.task_from_ui(docopt(__doc__))
+		print w.process(docopt(__doc__))
 	except KeyboardInterrupt:
 		sys.exit()
