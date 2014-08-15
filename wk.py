@@ -17,7 +17,7 @@ from task import Task
 class Worker(object):
 	''' main access to Job Database'''
 	_db = Database(TASK_MANAGER_NAME)
-	_coll = DB.use_coll(TASK_COLL)
+	_coll = self._db.use_coll(TASK_COLL)
 	
 	def __init__(self):
 		'''init the project base with db and collections'''
