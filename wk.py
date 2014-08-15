@@ -12,7 +12,7 @@ from datetime import datetime
 #from utils import 
 #from utils import ask_yes_no, validate_email, validate_url
 from read_the_doc import CMD_DOC
-from task import Task
+from task import *
 from utils import *
 class Worker(object):
 	''' main access to Job Database'''
@@ -38,12 +38,14 @@ class Worker(object):
 			self.task = Task(self.task_list[0])
 			self.map_doc()
 			return self.task
+	
 	def process(self, user_input):
 		#creating a task
 		self.task_from_ui(user_input)
 		
 		if self.task.action == "create_or_show":
 			#create_andschedule or show a defaut crawl job if exists
+			 
 			self.select_task({"name": self.task.name})
 			self.task.action = "crawl"
 			if self.task_list is not None:
@@ -51,18 +53,29 @@ class Worker(object):
 			else:
 				return self.create_task()
 		elif self.task.action == "update_all":
+			
 			return self.udpate_project()
 			#self.udpate_all() with self.project_data.values
 		elif self.task.action == "udpate_crawl":
+			
 			self.task.action = "crawl"
 			return self.udpate_task()
 			#self.udpate_crawl() with self.crawl_data.values and self.option	 
 		elif self.task.action == "user":
+			
 			self.show_user()
 		elif self.task.action == "archive":
-			#create and schedule or show a new archive job 	
-			r = ArchiveTask()
-			return r.run()
+			#create and schedule or show a new archive job
+			self.task.format = "defaut"
+			self.task.url = self.task.name
+			self.task.name = self.task.name
+			
+			self.select_task({"name": self.task.name, "action":self.task.action})
+			if self.task_list is not None:
+				return self.show_task()
+			else:
+				return self.create_task()
+			
 		elif self.task.action == "report":
 			r = ReportTask()
 			return r.run()
@@ -90,7 +103,7 @@ class Worker(object):
 	def create_task(self):
 		'''create one specific task'''
 		if ask_yes_no("Do you want to create a new project?"):
-			
+			del self.task.raw_data
 			self.schedule_task()
 			self.run_task()
 			return "Sucessfully created '%s' task for project '%s'."%(self.task.action,self.task.name)
