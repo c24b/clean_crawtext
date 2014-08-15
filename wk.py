@@ -13,7 +13,7 @@ from datetime import datetime
 #from utils import ask_yes_no, validate_email, validate_url
 from read_the_doc import CMD_DOC
 from task import Task
-
+from utils import *
 class Worker(object):
 	''' main access to Job Database'''
 	
@@ -90,8 +90,8 @@ class Worker(object):
 	def create_task(self):
 		'''create one specific task'''
 		if ask_yes_no("Do you want to create a new project?"):
-			self.schedule()
-			self.run_task(3*60)
+			self.schedule_task()
+			self.run_task()
 		else: sys.exit()
 	
 	def select_task(self, query):
