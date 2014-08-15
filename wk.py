@@ -25,7 +25,7 @@ class Worker(object):
 	def task_from_ui(self, user_input):
 		'''mapping user input into task return job parameters'''
 		self.task = Task(user_input)
-		t.config()
+		self.task.config()
 		return self.task
 			
 	def task_from_db(self, query):
