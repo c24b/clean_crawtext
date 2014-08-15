@@ -4,40 +4,38 @@ import sys, os
 from database import Database, TASK_MANAGER_NAME, TASK_COLL
 import re
 from datetime import datetime
-from abc import ABCMeta, abstractmethod
-#from page2 import Page
+#from abc import ABCMeta, abstractmethod
+
 import docopt
 from utils.goose import *
 from datetime import datetime
-from job import *
-from utils import ask_yes_no
-from utils import validate_email
-from utils.more_utils import validate_url
-
+#from utils import 
+#from utils import ask_yes_no, validate_email, validate_url
+from read_the_doc import CMD_DOC
 from task import Task
+
 class Worker(object):
 	''' main access to Job Database'''
+	_db = Database(TASK_MANAGER_NAME)
+	_coll = DB.use_coll(TASK_COLL)
+	
 	def __init__(self):
 		'''init the project base with db and collections'''
-		self.task_db = Database(TASK_MANAGER_NAME)
-		self.collection =self.task_db.create_coll(TASK_COLL)
-		self.doc = {	"name":None,
-						"action":None,
-						"start_date":None,
-						"next_run":None,
-						"last_run":None,
-						"status":None,
-						"nb_run":0,
-						"msg":None,
-						}
-
+		pass
+		
 	def task_from_ui(self, user_input):
 		'''mapping user input into task return job parameters'''
-		t = Task(user_input['<name>'])
+		self.task = Task(user_input)
+		t.config()
+		return self.task
+	
+	def task_from_db(self):
+		self.task = Task({"name": name})
+		self.map_doc()
 		
-		#~ job = {} 
-		#~ job['name'] = user_input['<name>']	
-		
+	def process(self):
+		 
+						
 		if validate_email(t.name) is True:
 		#if validate_email(job['name']) is True:
 			#user interrogation
@@ -62,6 +60,8 @@ class Worker(object):
 				#print "Site %s is not archived.\nTo archive a new site type: python crawtext.py archive %s" %(job["name"], job["name"])
 				sys.exit()	
 			else:
+				t.update(user_input)
+				print t.__dict__
 				self.schedule_task(t)
 				#self.create_task(job, "archive")
 		#task interrogation
