@@ -111,8 +111,8 @@ class Worker(object):
 			
 	def show_task(self):
 		if self.task_list > 0:
-			print "%s: %s"%(order.capitalize(), query[str(order)])
-			for task in self.task_list:
+			#print "%s: %s"%(order.capitalize(), query[str(order)])
+			for task in self.task:
 				for k,v in task.items():
 					if k == '_id':
 						continue
