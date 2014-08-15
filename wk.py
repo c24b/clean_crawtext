@@ -194,42 +194,4 @@ class Worker(object):
 		#Report
 		#Export
 		pass
-	def run(self, user_input):
-		'''main execution from cmdline'''
-		job = self.task_from_ui(user_input)
-		print job
-		#no action declared so defaut is set to crawl
-		if job["action"] is None:
-			self.select_tasks({"name": job["name"]})
-			#no project
-			if self.task_list is None:
-				print "No project %s has been found." %(job["name"])
-				new_job = self.create_task(job, "crawl")
-				print "Defaut project will be a crawl job with name %s"%(job["name"])
-				print "You will have to set a query and seeds to be executed properly"	
-				return self.schedule_task(new_job)				
-				#could also schedule a comple project
-			else:
-				#update project or task?
-				#no udpate ==> show
-				if job['scope'] is None:
-					self.show_tasks({"name": job["name"]}, "name")
-					sys.exit()
-				else:
-					if job["scope"] in ["r", "u"]:
-						return self.update_project(self, job)
-					else:
-						#update sources
-						return self.update_task(self,job)
-						
-		else:
-			if job["action"] in ["start", "stop", "list", "delete"]:
-				#execute immediately and don't schedule
-				return self.run_task(job)
-			elif job["action"] in ["export", "report", "archive"]:
-				#schedule for next run
-				print self.schedule_task(job)
-				#and execute once
-				return self.run_task(job)
-			#self.select_tasks({"name": job["name"], "action": job["action"]}, "name"})	
-		
+	
