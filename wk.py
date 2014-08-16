@@ -34,7 +34,7 @@ class Worker(object):
 		self.action = "unset"
 		self.msg ="created"
 		self.repeat = "month"
-		self.user = "4barbes@gmail.com"
+		self.user = "constance@cortext.net"
 		self.status = True
 		
 		#schedule params
@@ -79,15 +79,16 @@ class Worker(object):
 				self.format = "defaut"
 			return self
 		else:
-			self.action = "create_or_show"		
+			self.action = "create_or_show"
+			
 			for k,v in user_input.items():
 				if v is True and k in self.ACTION_LIST:
 					self.action = k
 					return self
 				elif v is True and k in self.SCOPE_LIST:
 					self.scope = re.sub("-", "", k)
-					self.action = "udpate"
-					
+					self.action = "update"
+					self.values = []
 				elif v is True and k in self.OPTION_lIST:
 					self.option = k
 					
@@ -96,10 +97,11 @@ class Worker(object):
 					setattr(self, re.sub("<|>", "", k), v)
 					self.action = "update_crawl"
 					self.scheduled = True
-				elif v is not None and k in self.DATA_C_LIST:
+					self.values.append(k)
+				elif v is not None and k in self.DATA_U_LIST:
 					setattr(self, re.sub("<|>", "", k), v)
-					
-					self.action = "update_all"
+					self.values.append(k)
+					self.action = "update_project"
 				else:
 					continue
 			
@@ -133,73 +135,6 @@ class Worker(object):
 		self.task_from_ui(user_input)
 		func = getattr(self,self.action)
 		func()
-		#~ #self.task_from_ui(user_input)
-		#~ 
-		#~ if self.task.action == "create_or_show":
-			#~ #create_andschedule or show a defaut crawl job if exists
-			 #~ 
-			#~ self.select_task({"name": self.task.name})
-			#~ self.task.action = "crawl"
-			#~ if self.task_list is not None:
-				#~ return self.show_task()
-			#~ else:
-				#~ return self.create_task()
-		#~ elif self.task.action == "update_all":
-			#~ self.select_task({"name": self.task.name})
-			#~ if self.task_list is not None:
-				#~ #self.udpate_all() with self.project_data.values
-				#~ return self.udpate_project()
-			#~ return "No project %s found" %self.task.name
-			#~ 
-		#~ elif self.task.action == "udpate_crawl":
-			#~ 
-			#~ self.select_task({"name": self.task.name, "action": "crawl"})
-			#~ if self.task_list is not None:
-				#~ self.task.action = "crawl"
-				#~ return self.udpate_task()
-			#~ return "Project %s has no active crawl"%self.task.name
-			#~ #self.udpate_crawl() with self.crawl_data.values and self.option	 
-		#~ elif self.task.action == "user":
-			#~ self.select_task({"user": self.task.name})
-			#~ if self.task_list is not None:
-				#~ return self.show_task()
-			#~ return "No user %s found"%self.task.name
-				#~ 
-		#~ elif self.task.action == "archive":
-			#~ #create and schedule or show a new archive job
-			#~ self.task.format = "defaut"
-			#~ self.task.url = self.task.name
-			#~ self.task.name = self.task.name
-			#~ 
-			#~ self.select_task({"name": self.task.name, "action":self.task.action})
-			#~ if self.task_list is not None:
-				#~ return self.show_task()
-			#~ else:
-				#~ return self.create_task()
-			#~ 
-		#~ elif self.task.action == "report":
-			#~ r = ReportTask()
-			#~ return r.run()
-		#~ elif self.task.action == "export":	
-			#~ r = ReportTask()
-			#~ return r.run()
-			#~ #action directly handle task with no schedule
-		#~ else:	
-			#~ if self.task.action == "start":
-				#~ return self.run_task()
-				#~ 
-			#~ elif self.task.action == "stop":
-				#~ return self.stop_task()
-			#~ elif self.task.action == "delete":
-				#~ print "delete project or delete task"
-				#~ return
-			#~ elif self.task.action == "list":
-				#~ return self.list_task
-			#~ #return eval(str(self.task.action).capitalize+"()")
-			#~ #return Task.run(job["action"], job["name"])
-			
-	
-				
 				
 	def create_task(self):
 		'''create one specific task'''
@@ -246,7 +181,7 @@ class Worker(object):
 		else:
 			print "No task for %s"% self.task.name
 			
-	def update_task(self, doc, action="crawl", scope="s"):
+	def update_crawl(self, doc, action="crawl", scope="s"):
 		self.select_task(self, {"name":self.task.name, "action": self.task.action})
 		if self.task_list is not None:
 			for k, v in self.task.items:
