@@ -92,12 +92,14 @@ class Worker(object):
 					
 					
 				elif v is not None and k in self.DATA_C_LIST:
-					setattr(self, re.sub("<|>", "", k), v)
+					k = re.sub("<|>", "", k)
+					setattr(self, k, v)
 					self.action = "update_crawl"
 					self.scheduled = True
 					self.values.append(k)
 				elif v is not None and k in self.DATA_U_LIST:
-					setattr(self, re.sub("<|>", "", k), v)
+					k = re.sub("<|>", "", k)
+					setattr(self, k, v)
 					self.values.append(k)
 					self.action = "update_project"
 				else:
@@ -116,6 +118,7 @@ class Worker(object):
 				t = Task()
 				t.task_from_db(n)
 			return True
+	
 	def show_user(self):
 		
 		user_data = [n for n in self.COLL.find({"user": self.user})]
@@ -128,7 +131,21 @@ class Worker(object):
 				i = i+1
 				print "%s) %s job for '%s'"%(str(i), n["action"], n["name"])
 			return True
+	def create_or_show(self):
+		print "create or show"
+		if self.action == "create_or_show":
+			#defaut action to create is a crawl
+			self.action = "crawl"
 			
+		self.select_task({"name": self.name, "action":self.action})
+		if self.task_list is None:
+			print "Task not found."
+			self.create_task()
+		else:
+			
+			self.show_task()		
+		
+		
 	def create_task(self):
 		'''create one specific task'''
 		if ask_yes_no("Do you want to create a new project?"):
@@ -140,14 +157,15 @@ class Worker(object):
 	
 	def select_task(self, query):
 		'''show tasks that match the filter with a specific order return the set of tasks'''
-		self.task_list = [t for t in self.COLL.find(query)]
+		self.task_list = [n for n in self.COLL.find(query)]
 		
 		if len(self.task_list) == 0:
 			self.task_list = None
-			return 0
+			return None
 		else:
 			if len(self.task_list) == 1:
 				task = "task"
+				self.task = self.task_list[0]
 			else:
 				task = "tasks"
 			print "\n", len(self.task_list), "%s stored in %s database for %s:'%s'"%(task, str(TASK_MANAGER_NAME), str(query.keys()[0]), str(query.values()[0]))
@@ -158,7 +176,7 @@ class Worker(object):
 			#print "%s: %s"%(order.capitalize(), query[str(order)])
 			
 			print "\n"
-			print self.task.name.upper()
+			print self.name.upper()
 			print "____________________\n"
 			for task in self.task_list:
 				print "> ", task["action"],":\n"
@@ -172,37 +190,45 @@ class Worker(object):
 				print "--------------"
 			return "____________________"
 		else:
-			print "No task for %s"% self.task.name
+			print "No task for project %s"% self.name
 			
-	def update_crawl(self, doc, action="crawl", scope="s"):
-		self.select_task(self, {"name":self.task.name, "action": self.task.action})
-		if self.task_list is not None:
-			for k, v in self.task.items:
-				print k,v
-			print self.task.scope
+	def update_crawl(self):
+		self.action = "crawl"
+		self.select_task({"name": self.name, "action": self.action})
+		if self.task_list is None:
+			print "No active crawl has been found for project %s" %self.name
+			self.create_task()
+		else:
+			if self.scope == "q":
+				self.COLL.update(self.task["_id"], {"$set":{self.values[0], getattr(self, str(self.values[0]))}})
+				return "Sucessfully updated query to : %s on crawl job of project %s"%(self.query, self.name)
+			elif self.scope = "k":
+				self.COLL.update(self.task["_id"], {"$set":{self.values[0], getattr(self, str(self.values[0]))}})
+				print "Sucessfully add a new BING API KEY to crawl job of project %s"%(self.name)
+				#if self.option == "append":
+					#self.search_seeds()
+			else:
+				#self.file
+				#self.COLL.update(self.task["_id"], {"$set":{self.values[0], getattr(self, str(self.values[0]))}})
+				self.configure_sources()
 			#c = CrawlJob(doc)
 			#c.update_values()
 			#c.set_sources()
-		else:
-			print "No task %s found for project %s" %(self.action, self.name)
+		
 	
-	def update_project(self, doc):
-		self.select_task({"name": self.task.name}, "name")
+	def update_project(self):
+		self.select_task({"name": self.task.name})
 		#values = [[k, v] for k,v in doc.items() if k != "name"]
-		for t in self.task_list:				
-			print self.project_data.keys()
-			print self.project_data.values()
-			for k,v in self.project_data.items():
-				print k,v
-				self.task[k] = v
-				#self.COLL.update(t["_id"],{"$set":{k, v}})
-		#~ if self.task_list is not None:
-			#~ for t in self.task_list:
-				#~ print self.project_data.keys()
-				#~ print self.project_data.values()
-				#~ for k,v in self.project_data.items():
-					#~ self.COLL.update(t["_id"],{"$set":{k, v}})
-			#~ print "Succesfully updated project %s with new params" %self.project_name
+		if self.task_list is None:
+			print "No project%s found" %self.name
+			self.create_task()
+		else:
+			for n in self.task_list:
+				print n["name"], n["_id"]
+				print self.data, getattr(self, str(self.value))
+				self.COLL.update({n["id"] "$set":{self.data: getattr(self, self.value)}
+		
+			#~ print "Succesfully updated the entire project %s with new params %s" %self.project_name, self.value
 		#~ else:
 			#~ print "No project %s found."%self.project_name
 			#~ self.task.action = "crawl"
@@ -213,6 +239,7 @@ class Worker(object):
 	def refresh_task(self, name, action="crawl"):
 		'''after a run update the last_run and set nb_run how to log msg?'''
 		pass	
+	
 	def delete_project(self, doc):
 		'''delete project and archive results'''
 		#Results and logs are saved in the database of the project.\nTo see stats type:\n\t python crawtext.py %s report\nTo have direct acess to database, type:\n\t mongo %s\n\t>db.results.find()\n\t>db.logs.find()\n\t>db.sources.find()" %(job['name'], job['action'])
@@ -227,11 +254,13 @@ class Worker(object):
 		db.use_coll("results")
 		db.drop_database(job["name"])
 		return "Project %s deleted. All data of this project has been archived in %s" %log
+	
 	def schedule_task(self):
 		'''schedule task inserting into db'''
-		self.task.first_run = 4*60
+		self.first_run = 4*60
 		self.COLL.insert(self.task.__dict__)
 		return "%s on project %s has been sucessfully scheduled to be run next %s" %(self.task.action, self.task.name, self.task.repeat)
+		
 	def schedule_project(self):
 		'''schedule complete tasks set for one crawl inserting into db'''
 		for action in ["crawl", "report", "export"]:
