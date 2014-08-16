@@ -1,0 +1,10 @@
+NOTES SCHEDULER
+
+RUN New_job 3 minutes after
+RUN Scheduler in Background:
+- once a day (fixed day and hour)
+- update tasks when run
+- shceduler again for next day
+
+
+AFTER email when finished

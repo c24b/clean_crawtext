@@ -13,7 +13,7 @@ import sys
 from multiprocessing import Pool
 import subprocess
 from utils.url import *
-
+from task import Task
 from query import Query
 		
 class Job(object):
@@ -295,7 +295,7 @@ class CrawlJob(object):
 			
 	
 	
-class ReportJob(object):
+class ReportJob(Task):
 	def __init__(self, doc):
 		
 		self.date = datetime.now()
@@ -312,21 +312,16 @@ class ReportJob(object):
 		return True
 		
 		
-class ArchiveJob(object):
-	def __init__(self, doc):
-		self.date = datetime.now()
-		for k, v in doc.items():
-			setattr(self,k,v) 	
-		pass
+class ArchiveJob(Task):
 	def run(self):
 		print "Archiving %s" %self.url
 		return True
 
-class ExportJob(object):
-	def __init__(self, doc):
-		self.date = datetime.now()
-		for k, v in doc.items():
-			setattr(self,k,v) 	
+class ExportJob(Task):
+	#~ def __init__(self, doc):
+		#~ self.date = datetime.now()
+		#~ for k, v in doc.items():
+			#~ setattr(self,k,v) 	
 	def run(self):
 		print "Exporting data from", self.name
 		

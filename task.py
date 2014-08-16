@@ -15,73 +15,101 @@ class Task(object):
 	OPTION_lIST	= ['add', 'set', 'append', 'delete', 'expand']
 	DATA_C_LIST = ['<url>', '<file>', '<query>', '<key>']
 	DATA_U_LIST = ['<email>', '<month>']
+	DATA_A_LIST = ['<format>']
 	
-	def __init__(self, user_input):
-		'''Une tache est d'abord définie par le nom du project et son type'''
-		self.name = user_input['<name>']
+	def __init__(self):
+		'''Une tache est d'abord définie par le nom du projet et son type'''
+		#defaut params
+		self.name = None
 		self.action = "unset"
-		#self.start_date = datetime.today()
-		self.first_run = 180
-		self.raw_data = user_input
-		#first_run = start_day.replace(start_day.minute+3)
-		#eq to wait 180 sec
+		self.msg ="created"
+		self.repeat = "month"
+		self.user = "4barbes@gmail.com"
+		self.status = True
+		
+		#schedule params
+		self.run = False
+		self.scheduled = True
+		self.start_date = datetime.today()
+		#self.first_run = self.start_date.replace(self.start_day.minute+3)
 		self.nb_run = 0
-		self.status = None
-		self.msg ="just created"
+		
+		
+		
 	
 	
-	
-	def parse_input(self, input):
-		self.crawl_data = {}
-		self.action = None
-		self.scope = ""
-		self.project_data = {}
-		for k,v in input.items():
-			if v is True and k in self.ACTION_LIST:
-				self.action = k
-				return self.action
-			elif v is True and k in self.SCOPE_LIST:
-				self.scope = re.sub("-", "", k)
-				
-			elif v is True and k in self.OPTION_lIST:
-				self.option = k
-				
-			elif v is not None and k in self.DATA_C_LIST:
-				self.crawl_data[str(re.sub("<|>", "", k))] = v 
-				self.action = "update_crawl"
-			elif v is not None and k in self.DATA_C_LIST:
-				self.project_data[str(re.sub("<|>", "", k))] = v
-				self.action = "update_all"
-		return self.action		
+	def parse_input(self, user_input):
+		self.name = user_input['<name>']
+		#run immediately
+		self.first_run = 1
+		#no schedule
+		self.scheduled = False
+		
+		if validate_email(self.name) is True:
+			self.action = "show_user"
+			self.user = self.name
+			return self
 			
-	@property	
-	def start_date(self):
-		return datetime.strptime(self.start_date, '%Y-%m-%d %H:%M:%S')
+		elif validate_url(self.name) is True:
+			self.action = "archive"
+			self.url = self.name
+			self.scheduled = True
+			try:
+				self.format = 	user_input['<format>']
+			except KeyError:
+				self.format = "defaut"
+				return self	
+		elif user_input["archive"] is True:
+			self.action = 'archive'
+			self.url = user_input['<url>']
+			self.name = self.url
+			self.scheduled = True
+			try:
+				self.format = 	user_input['<format>']
+			except KeyError:
+				self.format = "defaut"
+				return self
+		else:
+			self.action = "create_or_show"		
+			for k,v in user_input.items():
+				if v is True and k in self.ACTION_LIST:
+					self.action = k
+					return self
+				elif v is True and k in self.SCOPE_LIST:
+					self.scope = re.sub("-", "", k)
+					self.action = "udpate"
+					
+				elif v is True and k in self.OPTION_lIST:
+					self.option = k
+					
+					
+				elif v is not None and k in self.DATA_C_LIST:
+					setattr(self, re.sub("<|>", "", k), v)
+					self.action = "update_crawl"
+					self.scheduled = True
+				elif v is not None and k in self.DATA_C_LIST:
+					setattr(self, re.sub("<|>", "", k), v)
+					
+					self.action = "update_all"
+				else:
+					continue
+			
+			return self		
+				
 		
 	@property
 	def last_run(self):
 		self.last_run = datetime.today()
 		return self.last_run
 	
-	
-	def config(self):
-		if validate_email(self.name) is True:
-			self.action = "user"
-			self.first_run = 0
-		elif validate_url(self.name) is True:
-			self.action = "archive"
-		elif self.action == "unset":
-			self.action = self.parse_input(self.raw_data)
-			if self.action is None:
-				self.action = "create_or_show"
-		else:
-			self.action = self.action
-		del self.raw_data 
-		return self
-	
-	def map_doc(self):
-		print self.raw_data
-				
+	def map_doc(self, data):
+		for k,v in data.items():
+			if v is not None:
+				setattr(self, k, v)
+			elif v is True:
+				setattr(self, k, v)
+			else: continue
+					
 				
 	def update(self, data):
 		self.next_run = self.next_run(self.repeat, self.start_date)
@@ -134,7 +162,22 @@ class Task(object):
 		
 class CrawlTask(Task):
 	pass
+
+class ArchiveTask(Task):
+	def udpate(self, doc):
+		self.format = "defaut"
+		self.url = doc.name
+		self.name = doc.name
+		self.action = doc.action
+		self.repeat = None
+		self.map_doc(doc)
 		
+		
+	def run(self):
+		print self.name
+		print "Archiving %s" %self.url
+		return True
+				
 if __name__ == "__main__":
 	user_input = docopt(CMD_DOC)
 	t = Task(user_input)

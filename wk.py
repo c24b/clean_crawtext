@@ -8,25 +8,102 @@ from datetime import datetime
 
 import docopt
 from utils.goose import *
-from datetime import datetime
+from datetime import date, datetime
+
 #from utils import 
 #from utils import ask_yes_no, validate_email, validate_url
 from read_the_doc import CMD_DOC
 from task import *
 from utils import *
+
 class Worker(object):
 	''' main access to Job Database'''
+	DB = Database(TASK_MANAGER_NAME)
+	COLL = DB.use_coll(TASK_COLL)
+	ACTION_LIST = ["report", "extract", "export", "archive", "start","stop", "delete","list"]
+	SCOPE_LIST = ["-u", "-r", "-q", "-k", "-s"]
+	OPTION_lIST	= ['add', 'set', 'append', 'delete', 'expand']
+	DATA_C_LIST = ['<url>', '<file>', '<query>', '<key>']
+	DATA_U_LIST = ['<email>', '<month>']
+	DATA_A_LIST = ['<format>']
+	
 	
 	def __init__(self):
-		self.db = Database(TASK_MANAGER_NAME)
-		self.collection = self.db.use_coll(TASK_COLL)
+		#defaut params
+		self.name = None
+		self.action = "unset"
+		self.msg ="created"
+		self.repeat = "month"
+		self.user = "4barbes@gmail.com"
+		self.status = True
+		
+		#schedule params
+		self.run = False
+		self.scheduled = True
+		self.start_date = date.today()
+		#self.first_run = self.start_date.replace(self.start_day.minute+3)
+		self.nb_run = 0
+		
 	
 		
 	def task_from_ui(self, user_input):
 		'''mapping user input into task return job parameters'''
-		self.task = Task(user_input)
-		self.task.config()
-		return self.task
+		self.name = user_input['<name>']
+		#run immediately
+		self.first_run = 1
+		#no schedule
+		self.scheduled = False
+		
+		if validate_email(self.name) is True:
+			self.action = "show_user"
+			self.user = self.name
+			return self
+			
+		elif validate_url(self.name) is True:
+			self.action = "archive"
+			self.url = self.name
+			self.scheduled = True
+			try:
+				self.format = 	user_input['<format>']
+			except KeyError:
+				self.format = "defaut"
+				return self	
+		elif user_input["archive"] is True:
+			self.action = 'archive'
+			self.url = user_input['<url>']
+			self.name = self.url
+			self.scheduled = True
+			try:
+				self.format = 	user_input['<format>']
+			except KeyError:
+				self.format = "defaut"
+			return self
+		else:
+			self.action = "create_or_show"		
+			for k,v in user_input.items():
+				if v is True and k in self.ACTION_LIST:
+					self.action = k
+					return self
+				elif v is True and k in self.SCOPE_LIST:
+					self.scope = re.sub("-", "", k)
+					self.action = "udpate"
+					
+				elif v is True and k in self.OPTION_lIST:
+					self.option = k
+					
+					
+				elif v is not None and k in self.DATA_C_LIST:
+					setattr(self, re.sub("<|>", "", k), v)
+					self.action = "update_crawl"
+					self.scheduled = True
+				elif v is not None and k in self.DATA_C_LIST:
+					setattr(self, re.sub("<|>", "", k), v)
+					
+					self.action = "update_all"
+				else:
+					continue
+			
+			return self
 			
 	def task_from_db(self, query):
 		self.select_tasks(query)
@@ -35,67 +112,91 @@ class Worker(object):
 			print "No task with this query"	
 			return False
 		else:
-			self.task = Task(self.task_list[0])
-			self.map_doc()
-			return self.task
-	
-	def process(self, user_input):
-		#creating a task
-		self.task_from_ui(user_input)
+			for n in self.task_list:
+				t = Task()
+				t.task_from_db(n)
+			return True
+	def show_user(self):
 		
-		if self.task.action == "create_or_show":
-			#create_andschedule or show a defaut crawl job if exists
-			 
-			self.select_task({"name": self.task.name})
-			self.task.action = "crawl"
-			if self.task_list is not None:
-				return self.show_task()
-			else:
-				return self.create_task()
-		elif self.task.action == "update_all":
+		user_data = [n for n in self.COLL.find({"user": self.user})]
+		if len(user_data) == 0:
+			print "No user %s registered" %self.user
+			return False
+		else:
+			print "Project owned by:",self.user, "\n"
+			for i, n in enumerate(user_data):
+				i = i+1
+				print "%s) %s job for '%s'"%(str(i), n["action"], n["name"])
+			return True
 			
-			return self.udpate_project()
-			#self.udpate_all() with self.project_data.values
-		elif self.task.action == "udpate_crawl":
-			
-			self.task.action = "crawl"
-			return self.udpate_task()
-			#self.udpate_crawl() with self.crawl_data.values and self.option	 
-		elif self.task.action == "user":
-			
-			self.show_user()
-		elif self.task.action == "archive":
-			#create and schedule or show a new archive job
-			self.task.format = "defaut"
-			self.task.url = self.task.name
-			self.task.name = self.task.name
-			
-			self.select_task({"name": self.task.name, "action":self.task.action})
-			if self.task_list is not None:
-				return self.show_task()
-			else:
-				return self.create_task()
-			
-		elif self.task.action == "report":
-			r = ReportTask()
-			return r.run()
-		elif self.task.action == "export":	
-			r = ReportTask()
-			return r.run()
-			#action directly handle task with no schedule
-		else:	
-			if self.task.action == "start":
-				return self.run_task()
-				
-			elif self.task.action == "stop":
-				return self.stop_task()
-			elif self.task.action == "delete":
-				print "delete project or delete task"
-				return
-			elif self.task.action == "list":
-				return self.list_task
-			#return eval(str(self.task.action).capitalize+"()")
-			#return Task.run(job["action"], job["name"])
+	def process(self, user_input):
+		self.task_from_ui(user_input)
+		func = getattr(self,self.action)
+		func()
+		#~ #self.task_from_ui(user_input)
+		#~ 
+		#~ if self.task.action == "create_or_show":
+			#~ #create_andschedule or show a defaut crawl job if exists
+			 #~ 
+			#~ self.select_task({"name": self.task.name})
+			#~ self.task.action = "crawl"
+			#~ if self.task_list is not None:
+				#~ return self.show_task()
+			#~ else:
+				#~ return self.create_task()
+		#~ elif self.task.action == "update_all":
+			#~ self.select_task({"name": self.task.name})
+			#~ if self.task_list is not None:
+				#~ #self.udpate_all() with self.project_data.values
+				#~ return self.udpate_project()
+			#~ return "No project %s found" %self.task.name
+			#~ 
+		#~ elif self.task.action == "udpate_crawl":
+			#~ 
+			#~ self.select_task({"name": self.task.name, "action": "crawl"})
+			#~ if self.task_list is not None:
+				#~ self.task.action = "crawl"
+				#~ return self.udpate_task()
+			#~ return "Project %s has no active crawl"%self.task.name
+			#~ #self.udpate_crawl() with self.crawl_data.values and self.option	 
+		#~ elif self.task.action == "user":
+			#~ self.select_task({"user": self.task.name})
+			#~ if self.task_list is not None:
+				#~ return self.show_task()
+			#~ return "No user %s found"%self.task.name
+				#~ 
+		#~ elif self.task.action == "archive":
+			#~ #create and schedule or show a new archive job
+			#~ self.task.format = "defaut"
+			#~ self.task.url = self.task.name
+			#~ self.task.name = self.task.name
+			#~ 
+			#~ self.select_task({"name": self.task.name, "action":self.task.action})
+			#~ if self.task_list is not None:
+				#~ return self.show_task()
+			#~ else:
+				#~ return self.create_task()
+			#~ 
+		#~ elif self.task.action == "report":
+			#~ r = ReportTask()
+			#~ return r.run()
+		#~ elif self.task.action == "export":	
+			#~ r = ReportTask()
+			#~ return r.run()
+			#~ #action directly handle task with no schedule
+		#~ else:	
+			#~ if self.task.action == "start":
+				#~ return self.run_task()
+				#~ 
+			#~ elif self.task.action == "stop":
+				#~ return self.stop_task()
+			#~ elif self.task.action == "delete":
+				#~ print "delete project or delete task"
+				#~ return
+			#~ elif self.task.action == "list":
+				#~ return self.list_task
+			#~ #return eval(str(self.task.action).capitalize+"()")
+			#~ #return Task.run(job["action"], job["name"])
 			
 	
 				
@@ -111,7 +212,7 @@ class Worker(object):
 	
 	def select_task(self, query):
 		'''show tasks that match the filter with a specific order return the set of tasks'''
-		self.task_list = [t for t in self.collection.find(query)]
+		self.task_list = [t for t in self.COLL.find(query)]
 		
 		if len(self.task_list) == 0:
 			self.task_list = None
@@ -146,27 +247,40 @@ class Worker(object):
 			print "No task for %s"% self.task.name
 			
 	def update_task(self, doc, action="crawl", scope="s"):
-		self.select_task(self, {"name":doc["name"], "action": action})
-		if self.task_list == 1:
-			doc = self.task[0]
+		self.select_task(self, {"name":self.task.name, "action": self.task.action})
+		if self.task_list is not None:
+			for k, v in self.task.items:
+				print k,v
+			print self.task.scope
 			#c = CrawlJob(doc)
 			#c.update_values()
 			#c.set_sources()
-		pass
+		else:
+			print "No task %s found for project %s" %(self.action, self.name)
 	
 	def update_project(self, doc):
 		self.select_task({"name": self.task.name}, "name")
 		#values = [[k, v] for k,v in doc.items() if k != "name"]
-		if self.task_list is not None:
-			for t in self.task_list:
-				print self.project_data.keys()
-				print self.project_data.values()
-				for k,v in self.project_data.items():
-					self.collection.update(t["_id"],{"$set":{k, v}})
-			print "Succesfully updated project %s with new params" %self.project_name
-		else:
-			print "No project %s found."%self.project_name
-		
+		for t in self.task_list:				
+			print self.project_data.keys()
+			print self.project_data.values()
+			for k,v in self.project_data.items():
+				print k,v
+				self.task[k] = v
+				#self.COLL.update(t["_id"],{"$set":{k, v}})
+		#~ if self.task_list is not None:
+			#~ for t in self.task_list:
+				#~ print self.project_data.keys()
+				#~ print self.project_data.values()
+				#~ for k,v in self.project_data.items():
+					#~ self.COLL.update(t["_id"],{"$set":{k, v}})
+			#~ print "Succesfully updated project %s with new params" %self.project_name
+		#~ else:
+			#~ print "No project %s found."%self.project_name
+			#~ self.task.action = "crawl"
+			#~ 
+			#~ self.create_task()
+			#~ #self.update_task()
 	
 	def refresh_task(self, name, action="crawl"):
 		'''after a run update the last_run and set nb_run how to log msg?'''
@@ -178,7 +292,7 @@ class Worker(object):
 		if self.task_list is None:
 			return "No project %s found. Project can't be deleted" %job["name"]
 		for t in self.task_list:
-			self.collection.remove(t)
+			self.COLL.remove(t)
 		j = ExportJob(doc)
 		log = j.run()
 		db = Database(job["name"])
@@ -188,14 +302,14 @@ class Worker(object):
 	def schedule_task(self):
 		'''schedule task inserting into db'''
 		self.task.first_run = 4*60
-		self.collection.insert(self.task.__dict__)
+		self.COLL.insert(self.task.__dict__)
 		return "%s on project %s has been sucessfully scheduled to be run next %s" %(self.task.action, self.task.name, self.task.repeat)
 	def schedule_project(self):
 		'''schedule complete tasks set for one crawl inserting into db'''
 		for action in ["crawl", "report", "export"]:
 			self.task.action = action
 			self.start_date = datetime.today()
-			self.collection.insert(self.task)
+			self.COLL.insert(self.task)
 		return "Project %s with crawl, report and export has been sucessfully scheduled and will be run next %s" %(self.task.name, self.task.repeat)
 			
 	def unschedule_task(self):
@@ -204,7 +318,7 @@ class Worker(object):
 		if len(self.task_list) == 0:
 				return "No project %s with task %s has been found." %(self.task.name,self.task.action)
 		else:	
-			self.collection.remove({"name": self.task.name, "action":self.task.action})
+			self.COLL.remove({"name": self.task.name, "action":self.task.action})
 			#here change name to archives_db_name_date
 			return "Task %s of project %s has been sucessfully deleted." 
 			
