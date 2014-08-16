@@ -1,19 +1,18 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 import sys, os
-from database import Database, TASK_MANAGER_NAME, TASK_COLL
+from database import *
 import re
-from datetime import datetime
+from datetime import datetime as dt
 #from abc import ABCMeta, abstractmethod
 
 import docopt
 from utils.goose import *
-from datetime import date, datetime
+
 
 #from utils import 
 #from utils import ask_yes_no, validate_email, validate_url
 from read_the_doc import CMD_DOC
-from task import *
 from utils import *
 
 class Worker(object):
@@ -40,7 +39,7 @@ class Worker(object):
 		#schedule params
 		self.run = False
 		self.scheduled = True
-		self.start_date = date.today()
+		self.start_date = dt.now()
 		#self.first_run = self.start_date.replace(self.start_day.minute+3)
 		self.nb_run = 0
 			
@@ -118,7 +117,9 @@ class Worker(object):
 				t = Task()
 				t.task_from_db(n)
 			return True
-	
+	def run(self):
+		print "Running"
+		return self
 	def show_user(self):
 		
 		user_data = [n for n in self.COLL.find({"user": self.user})]
@@ -200,12 +201,13 @@ class Worker(object):
 			self.create_task()
 		else:
 			if self.scope == "q":
-				self.COLL.update(self.task["_id"], {"$set":{self.values[0], getattr(self, str(self.values[0]))}})
-				return "Sucessfully updated query to : %s on crawl job of project %s"%(self.query, self.name)
-			elif self.scope = "k":
-				self.COLL.update(self.task["_id"], {"$set":{self.values[0], getattr(self, str(self.values[0]))}})
+				self.COLL.update(self.task["_id"], {"$set":{"query": self.query}})
+				return "Sucessfully updated query to : %s on crawl job of project %s" %(self.query, self.name)
+			elif self.scope == "k":
+				self.COLL.update(self.task["_id"], {"$set":{"key", self.key})
 				print "Sucessfully add a new BING API KEY to crawl job of project %s"%(self.name)
-				#if self.option == "append":
+				if self.option == "append":
+					CrawlJob()
 					#self.search_seeds()
 			else:
 				#self.file
@@ -224,18 +226,12 @@ class Worker(object):
 			self.create_task()
 		else:
 			for n in self.task_list:
-				print n["name"], n["_id"]
-				print self.data, getattr(self, str(self.value))
-				self.COLL.update({n["id"] "$set":{self.data: getattr(self, self.value)}
+				#~ print n["name"], n["_id"]
+				#~ print self.data, getattr(self, str(self.value))
+				print self.COLL.update(n["id"],{"$set":{self.data: getattr(self, self.value)}})
+				
+			return "Succesfully updated the entire project %s with new params %s" %(self.name, self.value)
 		
-			#~ print "Succesfully updated the entire project %s with new params %s" %self.project_name, self.value
-		#~ else:
-			#~ print "No project %s found."%self.project_name
-			#~ self.task.action = "crawl"
-			#~ 
-			#~ self.create_task()
-			#~ #self.update_task()
-	
 	def refresh_task(self, name, action="crawl"):
 		'''after a run update the last_run and set nb_run how to log msg?'''
 		pass	
@@ -264,10 +260,10 @@ class Worker(object):
 	def schedule_project(self):
 		'''schedule complete tasks set for one crawl inserting into db'''
 		for action in ["crawl", "report", "export"]:
-			self.task.action = action
-			self.start_date = datetime.today()
-			self.COLL.insert(self.task)
-		return "Project %s with crawl, report and export has been sucessfully scheduled and will be run next %s" %(self.task.name, self.task.repeat)
+			Worker()
+			self.action = action
+			self.COLL.insert(self.__dict__)
+		return "Project %s with crawl, report and export has been sucessfully scheduled and will be run next %s" %(self.name, self.repeat)
 			
 	def unschedule_task(self):
 		'''delete a specific task'''
@@ -281,26 +277,21 @@ class Worker(object):
 			
 		return "Task %s of project %s has been sucessfully deleted" %(self.task.action, self.task.name)
 	
-	def run_task(self, wait=3*60):
-		#j = Job(self, job)
-		#j.run()
-		return "Current %s  for project %s will be running in 3 minutes.\n An email will be sent when job is finished"%(self.task.action, self.task.name)
-		
-	def run_project(self):
-		#Crawl or Archive
-		#Report
-		#Export
-		pass
-	
 	def archive(self):
-		print "lauching archive in 3 minutes"
-		#~ a = Archive(self.url, self.format)
-		#~ if self.run is True:
-			#~ a.run(wait=3*60)
-		return True
+		self.repeat = None
+		self.next_run = self.start_date.replace(self.start_date.minute, self.start_date.minute+3)
+		self.COLL.insert(self.__dict__)
+		return "Sucessfully scheduled Archive job for %s Next run will be executed in 3 minutes" %self.url
+	
+	
+		
 			
 	def process(self, user_input):
 		self.task_from_ui(user_input)
 		func = getattr(self,self.action)
 		func()
 				
+class ArchiveJob(Worker):
+	def run(self):
+		print "Archiving %s" %self.url
+		
