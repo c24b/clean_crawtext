@@ -159,7 +159,7 @@ class CrawlJob(object):
 			query = self.query
 		if key is None:
 			key = self.key
-		print key			
+					
 		try:
 			#https://api.datamarket.azure.com/Bing/Search/v1/Composite?Sources=%27web%2Bnews%27&Query=%27ebola%27
 			r = requests.get(
@@ -167,17 +167,20 @@ class CrawlJob(object):
 					params={
 						'$format' : 'json',
 						'$top' : 100,
-						'Query' : query,
+						'Query' : '\'%s\'' %query,
 					},
 					auth=(key, key)
 					)
-			
 			r.raise_for_status()
+			i = 0
 			for e in r.json()['d']['results']:
+				i = i+1
 				self.insert_url(e["Url"],origin="bing")
+			self.seeds_nb = i
 			self.status = True
+			
 		except Exception as e:
-			self.status_code = r.status
+			self.status_code = r.status_code
 			self.error_type = "Error fetching results from BING API. %s" %e.args
 			self.db.logs.insert({"status_code":self.status_code,"error_type": self.error_type, "key":key, "query": query})
 			self.status = False

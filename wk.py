@@ -214,14 +214,13 @@ class Worker(object):
 				if self.option == "append":
 					c = CrawlJob(self.task)
 					try:
-						c.query
 						if c.get_bing() is True:
-							return "Seeds from search successfully added to sources of crawl project '%s'" %(self.name)
+							return "%s seeds from search successfully added to sources of crawl project '%s'" %(c.nb_seeds, self.name)
 						else:
 							return c.error_type
 					except KeyError:
 						return "Unable to search new seeds beacause no query has been set.\nTo set a query to your crawl project '%s' type:\n python crawtext.py %s -q \"your awesome query\"" %(self.name, self.name)
-					#self.search_seeds()
+					
 			else:
 				#self.file
 				#self.COLL.update(self.task["_id"], {"$set":{self.values[0], getattr(self, str(self.values[0]))}})
@@ -296,7 +295,8 @@ class Worker(object):
 		self.COLL.insert(self.__dict__)
 		return "Sucessfully scheduled Archive job for %s Next run will be executed in 3 minutes" %self.url
 	
-	def start(self)
+	def start(self):
+		self.action = crawl
 		CrawlJob(self.__dict__)
 		
 		
