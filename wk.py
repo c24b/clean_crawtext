@@ -43,9 +43,7 @@ class Worker(object):
 		self.start_date = date.today()
 		#self.first_run = self.start_date.replace(self.start_day.minute+3)
 		self.nb_run = 0
-		
-	
-		
+			
 	def task_from_ui(self, user_input):
 		'''mapping user input into task return job parameters'''
 		self.name = user_input['<name>']
@@ -131,11 +129,6 @@ class Worker(object):
 				print "%s) %s job for '%s'"%(str(i), n["action"], n["name"])
 			return True
 			
-	def process(self, user_input):
-		self.task_from_ui(user_input)
-		func = getattr(self,self.action)
-		func()
-				
 	def create_task(self):
 		'''create one specific task'''
 		if ask_yes_no("Do you want to create a new project?"):
@@ -270,3 +263,15 @@ class Worker(object):
 		#Export
 		pass
 	
+	def archive(self):
+		print "lauching archive in 3 minutes"
+		#~ a = Archive(self.url, self.format)
+		#~ if self.run is True:
+			#~ a.run(wait=3*60)
+		return True
+			
+	def process(self, user_input):
+		self.task_from_ui(user_input)
+		func = getattr(self,self.action)
+		func()
+				
