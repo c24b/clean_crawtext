@@ -13,7 +13,7 @@ import sys
 from multiprocessing import Pool
 import subprocess
 from utils.url import *
-from task import Task
+
 from query import Query
 		
 class Job(object):
@@ -153,24 +153,32 @@ class CrawlJob(object):
 	def update_seeds(self, data):
 		pass
 		
-	def get_bing(self, key="", query=""):
+	def get_bing(self, key=None, query=None):
 		''' Method to extract results from BING API (Limited to 5000 req/month) automatically sent to sources DB ''' 
+		if query is None:
+			query = self.query
+		if key is None:
+			key = self.key
+		print key			
 		try:
+			#https://api.datamarket.azure.com/Bing/Search/v1/Composite?Sources=%27web%2Bnews%27&Query=%27ebola%27
 			r = requests.get(
 					'https://api.datamarket.azure.com/Bing/Search/v1/Web', 
 					params={
 						'$format' : 'json',
 						'$top' : 100,
-						'Query' : '\'%s\'' % query,
+						'Query' : query,
 					},
 					auth=(key, key)
 					)
+			
+			r.raise_for_status()
 			for e in r.json()['d']['results']:
 				self.insert_url(e["Url"],origin="bing")
 			self.status = True
 		except Exception as e:
-			self.status_code = -2
-			self.error_type = "Error fetching results from BING API.\nError is : \"%s\".\nCheck your API key then check your credentials: number of calls may not exceed 5000req/month" %e.args
+			self.status_code = r.status
+			self.error_type = "Error fetching results from BING API. %s" %e.args
 			self.db.logs.insert({"status_code":self.status_code,"error_type": self.error_type, "key":key, "query": query})
 			self.status = False
 		return self.status
@@ -217,23 +225,22 @@ class CrawlJob(object):
 		''' Method to add new seed to sources and send them to queue if sourcing is deactivate'''
 		
 		if self.option == "expand":
-			print "Automatically expanding sources from last results"
+			#print "Automatically expanding sources from last results"
 			self.extend()
 		if self.file is not None:
 			print "Getting seeds from file %s" %self.file
 			self.get_local(self.file)
 		else:
-			print "Getting seeds from file is deactivated. No file with seeds url has been foud. Please set up a file with url if you want to add multiple urls."
-			
-		if self.query is not None:
-			print "Getting seeds from Bing results on search %s" %self.query
-			if self.key is not None:
-				self.get_bing(self.key, self.query)
+			#print "Getting seeds from file is deactivated. No file with seeds url has been foud. Please set up a file with url if you want to add multiple urls."			
+			if self.query is not None:
+				#print "Getting seeds from Bing results on search %s" %self.query
+				if self.key is not None:
+					self.get_bing(self.key, self.query)
+				else:
+					print "Search seeds is deactivated. No credential for search in Bing have been foud. Please set up a api key if you want to activate search."
+				return True
 			else:
-				print "Search seeds is deactivated. No credential for search in Bing have been foud. Please set up a api key if you want to activate search."
-			return True
-		else:
-			return False	
+				return False	
 			
 	def send_seeds_to_queue(self):
 		for url in self.db.sources.distinct("url"):
@@ -295,7 +302,7 @@ class CrawlJob(object):
 			
 	
 	
-class ReportJob(Task):
+class ReportJob(object):
 	def __init__(self, doc):
 		
 		self.date = datetime.now()
@@ -312,12 +319,12 @@ class ReportJob(Task):
 		return True
 		
 		
-class ArchiveJob(Task):
+class ArchiveJob(object):
 	def run(self):
 		print "Archiving %s" %self.url
 		return True
 
-class ExportJob(Task):
+class ExportJob(object):
 	#~ def __init__(self, doc):
 		#~ self.date = datetime.now()
 		#~ for k, v in doc.items():

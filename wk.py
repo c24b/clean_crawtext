@@ -4,6 +4,7 @@ import sys, os
 from database import *
 import re
 from datetime import datetime as dt
+from job import CrawlJob
 #from abc import ABCMeta, abstractmethod
 
 import docopt
@@ -77,15 +78,13 @@ class Worker(object):
 			return self
 		else:
 			self.action = "create_or_show"
-			
+			self.values = []
 			for k,v in user_input.items():
 				if v is True and k in self.ACTION_LIST:
 					self.action = k
 					return self
 				elif v is True and k in self.SCOPE_LIST:
 					self.scope = re.sub("-", "", k)
-					self.action = "update"
-					self.values = []
 				elif v is True and k in self.OPTION_lIST:
 					self.option = k
 					
@@ -113,9 +112,9 @@ class Worker(object):
 			print "No task with this query"	
 			return False
 		else:
-			for n in self.task_list:
-				t = Task()
-				t.task_from_db(n)
+			for k,v  in self.task.items():
+				setattr(self, k, v)
+				
 			return True
 	def run(self):
 		print "Running"
@@ -155,10 +154,12 @@ class Worker(object):
 			self.run_task()
 			return "Sucessfully created '%s' task for project '%s'."%(self.task.action,self.task.name)
 		else: sys.exit()
-	
 	def select_task(self, query):
+		self.task = self.COLL.find_one(query)
+		
+	def select_tasks(self, query):
 		'''show tasks that match the filter with a specific order return the set of tasks'''
-		self.task_list = [n for n in self.COLL.find(query)]
+		self.task_list = list(self.COLL.find(query))
 		
 		if len(self.task_list) == 0:
 			self.task_list = None
@@ -169,6 +170,7 @@ class Worker(object):
 				self.task = self.task_list[0]
 			else:
 				task = "tasks"
+				self.task = None
 			print "\n", len(self.task_list), "%s stored in %s database for %s:'%s'"%(task, str(TASK_MANAGER_NAME), str(query.keys()[0]), str(query.values()[0]))
 			return len(self.task_list)	
 			
@@ -196,18 +198,29 @@ class Worker(object):
 	def update_crawl(self):
 		self.action = "crawl"
 		self.select_task({"name": self.name, "action": self.action})
-		if self.task_list is None:
+		if self.task is None:
 			print "No active crawl has been found for project %s" %self.name
 			self.create_task()
 		else:
+			
 			if self.scope == "q":
-				self.COLL.update(self.task["_id"], {"$set":{"query": self.query}})
+				self.COLL.update({"_id":self.task["_id"]}, {"$set":{"query": self.query}})
 				return "Sucessfully updated query to : %s on crawl job of project %s" %(self.query, self.name)
 			elif self.scope == "k":
-				self.COLL.update(self.task["_id"], {"$set":{"key", self.key})
+				#~ print type(self.key)
+				#~ print self.task["_id"]
+				print self.COLL.update({"_id":self.task["_id"]},{"$set":{"key": self.key}})
 				print "Sucessfully add a new BING API KEY to crawl job of project %s"%(self.name)
 				if self.option == "append":
-					CrawlJob()
+					c = CrawlJob(self.task)
+					try:
+						c.query
+						if c.get_bing() is True:
+							return "Seeds from search successfully added to sources of crawl project '%s'" %(self.name)
+						else:
+							return c.error_type
+					except KeyError:
+						return "Unable to search new seeds beacause no query has been set.\nTo set a query to your crawl project '%s' type:\n python crawtext.py %s -q \"your awesome query\"" %(self.name, self.name)
 					#self.search_seeds()
 			else:
 				#self.file
@@ -260,9 +273,9 @@ class Worker(object):
 	def schedule_project(self):
 		'''schedule complete tasks set for one crawl inserting into db'''
 		for action in ["crawl", "report", "export"]:
-			Worker()
-			self.action = action
-			self.COLL.insert(self.__dict__)
+			w = Worker()
+			w.action = action
+			self.COLL.insert(w.__dict__)
 		return "Project %s with crawl, report and export has been sucessfully scheduled and will be run next %s" %(self.name, self.repeat)
 			
 	def unschedule_task(self):
@@ -283,13 +296,15 @@ class Worker(object):
 		self.COLL.insert(self.__dict__)
 		return "Sucessfully scheduled Archive job for %s Next run will be executed in 3 minutes" %self.url
 	
-	
+	def start(self)
+		CrawlJob(self.__dict__)
+		
 		
 			
 	def process(self, user_input):
 		self.task_from_ui(user_input)
 		func = getattr(self,self.action)
-		func()
+		return func()
 				
 class ArchiveJob(Worker):
 	def run(self):
