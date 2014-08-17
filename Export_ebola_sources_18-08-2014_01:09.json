@@ -1,4 +1,0 @@
-{ "_id" : { "$oid" : "53f13425dabe6e19d723a38c" }, "url" : "http://www.lemonde.fr", "origin" : "seeds.txt", "date" : [ { "$date" : 1408323653271 } ] }
-{ "_id" : { "$oid" : "53f13425dabe6e19d723a38d" }, "url" : "http://www.latribune.fr", "origin" : "seeds.txt", "date" : [ { "$date" : 1408323653275 } ] }
-{ "_id" : { "$oid" : "53f1344edabe6e19dc60bc00" }, "url" : "http://www.lemonde.fr", "origin" : "seeds.txt", "date" : [ { "$date" : 1408323694750 } ] }
-{ "_id" : { "$oid" : "53f1344edabe6e19dc60bc01" }, "url" : "http://www.latribune.fr", "origin" : "seeds.txt", "date" : [ { "$date" : 1408323694751 } ] }
