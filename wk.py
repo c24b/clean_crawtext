@@ -205,8 +205,9 @@ class Worker(object):
 				self.COLL.update({"_id":self.task["_id"]}, {"$set":{"query": self.query}})
 				return "Sucessfully updated query to : %s on crawl job of project %s" %(self.query, self.name)
 			elif self.scope == "k":
+				
 				self.COLL.update({"_id":self.task["_id"]},{"$set":{"key": self.key}})
-				print "Sucessfully add a new BING API KEY to crawl job of project %s"%(self.name)
+				print "Sucessfully added a new BING API KEY to crawl job of project %s"%(self.name)
 				if self.option == "append":
 					c = CrawlJob(self.task)
 					try:
@@ -220,9 +221,24 @@ class Worker(object):
 				return
 						
 			else:
-				#self.file
 				#self.COLL.update(self.task["_id"], {"$set":{self.values[0], getattr(self, str(self.values[0]))}})
-				self.configure_sources()
+				#print self.values[0], getattr(self, self.values[0])
+				
+				
+				self.COLL.update({"_id":self.task["_id"]},{"$set":{self.values[0]: getattr(self, self.values[0])}})
+				print "Sucessfully added a new %s \"%s\" to crawl job of project %s"%(self.values[0], getattr(self, self.values[0]), self.name)
+				self.select_task({"name": self.name, "action": self.action})
+				c = CrawlJob(self.task)
+				func = getattr(c,self.option+"_"+self.values[0])
+				if func():
+					
+				#self scope == s
+				
+				
+				
+				#self.file
+				
+				#self.configure_sources()
 			#c = CrawlJob(doc)
 			#c.update_values()
 			#c.set_sources()

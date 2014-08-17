@@ -149,18 +149,20 @@ class CrawlJob(object):
 		#~ self.logs = self.db.create_coll('logs')
 		#~ self.queue = self.db.create_coll('queue')
 		self.db.create_colls(['sources', 'results', 'logs', 'queue'])	
+	
+	def append_file(self):
+		return self.get_local()
 		
-	def update_seeds(self, data):
-		pass
 		
 	def get_bing(self, key=None, query=None):
 		''' Method to extract results from BING API (Limited to 5000 req/month) automatically sent to sources DB ''' 
 		self.status = {}
+		self.status["scope"] = "search seeds from BING"			
 		if query is None:
 			query = self.query
 		if key is None:
 			key = self.key
-		self.status["scope"] = "search seeds from BING"			
+		
 		try:
 			#https://api.datamarket.azure.com/Bing/Search/v1/Composite?Sources=%27web%2Bnews%27&Query=%27ebola%27
 			r = requests.get(
@@ -182,8 +184,10 @@ class CrawlJob(object):
 			
 		except Exception as e:
 			
-			
-			self.status["code"] = r.status_code
+			if r.status_code:
+				self.status["code"] = r.status_code
+			else:
+				r.status_code = 601
 			self.status["msg"] = "Error fetching results from BING API. %s" %e.args
 			self.status["status"] = False
 			
@@ -191,26 +195,47 @@ class CrawlJob(object):
 		
 	def get_local(self, afile = ""):
 		''' Method to extract url list from text file'''
+		self.status = {}
+		self.status["scope"] = "search seeds from file"
+		if afile == "":
+			afile = self.file
 		try:
+			
+			i = 1
 			for url in open(afile).readlines():
-				url = re.sub("\n", "", url)
-				self.insert_url(url, origin=afile)
-			return True
+				
+				status, status_code, error_type, url = check_url(url)
+				if status is True:
+					i = i+1
+					self.insert_url(url, origin=afile)
+				else:
+					self.db.logs.insert({"url": url, "status": status, "msg": self.error_type, "scope": self.scope, "code":status_code, "file": afile})
+			self.seeds_nb = i
+			self.status["status"] = True
 		except Exception:
-			self.status_code = -2
-			self.error_type = "Error fetching results from file: %s.\nFile doesn't not exists or has a wrong name.\nPlease set up a correct filename:\n\t crawtext.py %s -s append your_sources_file.txt" %(self.filename, self.name)
-			self.db.logs.insert({"status_code":self.status_code,"error_type": self.error_type, "file": afile})
-			return False
+			self.status["code"] = 602
+			self.status["msg"]= "Error fetching results from file: %s.\nFile doesn't not exists or has a wrong name.\nPlease set up a correct filename:\n\t crawtext.py %s -s append your_sources_file.txt" %(self.filename, self.name)
+			
+		return self.status
 	
 	def extend(self):
 		'''Expand sources url adding results urls collected from previous crawl'''
+		self.status["scope"] = "Extending results and adding it to seeds"
+		if len(self.db.results.distinct("url")) == 0:
+			self.status["status"] = False
+			self.status["code"] = 603
+			self.status["msg"] = "No results to put in seeds"
 		for url in self.db.results.distinct("url"):
-			if url not in self.db.sources.find({"url": url}):
+			i = 1
+			if url not in self.db.sources.find({"url": url}) and url not in self.db.logs.find({"url": url}):
+				i = i+1
 				self.insert_url(url, "automatic")
-		return
+			self.seed_nb = i
+			self.status["status"] = True
+		return self.status["status"]
 				
 	def insert_url(self, url, origin="default"):
-		if url not in self.db.sources.find({"url": url}):
+		if url not in self.db.sources.find({"url": url}) and url not in self.db.logs.find({"url": url}):
 			return self.db.sources.insert({"url":url, "origin":origin,"date":[datetime.today()]})
 		else:
 			return self.db.sources.update({"url":url,"origin":origin, "$push": {"date":datetime.today()}})
