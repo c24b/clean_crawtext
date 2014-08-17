@@ -151,8 +151,11 @@ class CrawlJob(object):
 		self.db.create_colls(['sources', 'results', 'logs', 'queue'])	
 	
 	def append_file(self):
-		print self.get_local()
-		return True
+		return self.get_local()
+		
+	def set_file(self):
+		'''Already updated in TASK DB''' 
+		pass
 		
 		
 	def get_bing(self, key=None, query=None):
@@ -165,12 +168,15 @@ class CrawlJob(object):
 			key = self.key
 		
 		try:
-			#https://api.datamarket.azure.com/Bing/Search/v1/Composite?Sources=%27web%2Bnews%27&Query=%27ebola%27
+			#defaut is Web could be composite Web + News
+			#defaut nb for web is 50 could be more if manipulating offset
+			#defaut nb for news is 15 could be more if manipulating offset
+			#see doc https://onedrive.live.com/view.aspx?resid=9C9479871FBFA822!112&app=Word&authkey=!ANNnJQREB0kDC04
 			r = requests.get(
 					'https://api.datamarket.azure.com/Bing/Search/v1/Web', 
 					params={
 						'$format' : 'json',
-						'$top' : 100,
+						'$top' : 50,
 						'Query' : '\'%s\'' %query,
 					},	
 					auth=(key, key)
@@ -179,13 +185,15 @@ class CrawlJob(object):
 			i = 0
 			for e in r.json()['d']['results']:
 				i = i+1
+				#no check url: url is suposed to be correct 
+				#note for myself: a short description is also done in results 
 				self.insert_url(e["Url"],origin="bing")
 			self.seeds_nb = i
 			self.status["status"] = True
 			
 		except Exception as e:
-			
-			if r.status_code:
+			#raise requests error if not 200
+			if r.status_code is not None:
 				self.status["code"] = r.status_code
 			else:
 				r.status_code = 601
@@ -200,15 +208,14 @@ class CrawlJob(object):
 		self.status["scope"] = "search seeds from file"
 		if afile == "":
 			afile = self.file
+		
 		try:
-			
-			i = 1
+			i = 0
 			for url in open(afile).readlines():
 				if url == "\n":
 					continue
 				url = re.sub("\n", "", url)
 				status, status_code, error_type, url = check_url(url)
-				print status
 				if status is True:
 					i = i+1
 					self.insert_url(url, origin=afile)
@@ -216,30 +223,33 @@ class CrawlJob(object):
 					self.db.logs.insert({"url": url, "status": status, "msg": error_type, "scope": self.status["scope"], "code":status_code, "file": afile})
 			self.seeds_nb = i
 			self.status["status"] = True
-			print "Successfully adding %s url form sources file." %self.seeds_nb
+			print "%s urls have been added to seeds from %s" %(self.seeds_nb, self.file)
 			return True
 		except Exception as e:
-			print e.args
-			self.status["code"] = 602
-			self.status["msg"]= "Error fetching results from file: %s.\nFile doesn't not exists or has a wrong name.\nPlease set up a correct filename:\n\t crawtext.py %s -s append your_sources_file.txt" %(self.file, self.name)
-			
-		return self.status
+			print e.args[0]
+			self.status["code"] = float(str(602)+"."+str(e.args[0]))
+			self.status["msg"]= "%s '%s'.\nPlease verify that your file is in the current directory To set up a correct filename and add directly to sources:\n\t crawtext.py %s -s append your_sources_file.txt" %(e.args[1],self.file, self.name)
+			print self.status["msg"]
+			return False
+		
 	
-	def extend(self):
+	def expand(self):
 		'''Expand sources url adding results urls collected from previous crawl'''
 		self.status["scope"] = "Extending results and adding it to seeds"
 		if len(self.db.results.distinct("url")) == 0:
 			self.status["status"] = False
 			self.status["code"] = 603
 			self.status["msg"] = "No results to put in seeds"
-		for url in self.db.results.distinct("url"):
-			i = 1
-			if url not in self.db.sources.find({"url": url}) and url not in self.db.logs.find({"url": url}):
-				i = i+1
-				self.insert_url(url, "automatic")
-			self.seed_nb = i
-			self.status["status"] = True
-		return self.status["status"]
+			return False
+		else:
+			for url in self.db.results.distinct("url"):
+				i = 1
+				if url not in self.db.sources.find({"url": url}) and url not in self.db.logs.find({"url": url}):
+					i = i+1
+					self.insert_url(url, "automatic")
+				self.seed_nb = i
+				self.status["status"] = True
+			return "Succesfully expanded seeds : %s urls have been added from previous results to crawl project %s" %(self.seed_nb, self.name)
 				
 	def insert_url(self, url, origin="default"):
 		if url not in self.db.sources.find({"url": url}) and url not in self.db.logs.find({"url": url}):
@@ -256,12 +266,18 @@ class CrawlJob(object):
 			return "url %s was not in sources. Check url format" %url
 					
 	def delete(self):
+		#self.db.sources.copy
+		archive_name = "Sources_archives_%s_%s.csv" %(self.name, str(datetime.datetime.today()))
+		print archive_name
+		#c = "mongoexport -d %s -c %s --jsonArray -o Sources_archives_%s_%s.json"%(self.name,"sources", self.name, str(datetime.datetime.today())	
+		c = "mongoexport -d %s -c %s --csv -o -f url,origin,date --fieldFile url,origin,date Sources_archives_%s_%s.json"%(self.name,"sources", archive_name)	
+		subprocess.call(c.split(" "), stdout=open(os.devnull, 'wb'))
+		print "Saving sources config to %s" %(archive_name)
 		self.db.sources.drop()
-		return 'Every single seed has been deleted. No way back!...Unless you configure seeds again.\nType python crawtext.py --h for options'		
+		return 'Every single seed has been deleted from project.\n No way back!...Unless you configure seeds again from archives csv or manually.\nType python crawtext.py --h for options'		
 		
 	def collect_sources(self):
 		''' Method to add new seed to sources and send them to queue if sourcing is deactivate'''
-		
 		if self.option == "expand":
 			#print "Automatically expanding sources from last results"
 			self.extend()

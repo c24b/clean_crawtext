@@ -20,6 +20,7 @@ class Worker(object):
 	''' main access to Job Database'''
 	DB = Database(TASK_MANAGER_NAME)
 	COLL = DB.use_coll(TASK_COLL)
+	#values for docopt and YAML?
 	ACTION_LIST = ["report", "extract", "export", "archive", "start","stop", "delete","list"]
 	SCOPE_LIST = ["-u", "-r", "-q", "-k", "-s"]
 	OPTION_lIST	= ['add', 'set', 'append', 'delete', 'expand']
@@ -78,7 +79,6 @@ class Worker(object):
 			return self
 		else:
 			self.action = "create_or_show"
-			self.values = []
 			for k,v in user_input.items():
 				if v is True and k in self.ACTION_LIST:
 					self.action = k
@@ -87,18 +87,19 @@ class Worker(object):
 					self.scope = re.sub("-", "", k)
 				elif v is True and k in self.OPTION_lIST:
 					self.option = k
-					
+					self.action = "update_sources"
+					self.value = None
 					
 				elif v is not None and k in self.DATA_C_LIST:
 					k = re.sub("<|>", "", k)
 					setattr(self, k, v)
 					self.action = "update_crawl"
 					self.scheduled = True
-					self.values.append(k)
+					self.value = k
 				elif v is not None and k in self.DATA_U_LIST:
 					k = re.sub("<|>", "", k)
 					setattr(self, k, v)
-					self.values.append(k)
+					self.value = k
 					self.action = "update_project"
 				else:
 					continue
@@ -130,52 +131,52 @@ class Worker(object):
 				print "%s) %s job for '%s'"%(str(i), n["action"], n["name"])
 			return True
 	def create_or_show(self):
-		print "create or show"
 		if self.action == "create_or_show":
 			#defaut action to create is a crawl
 			self.action = "crawl"
 			
-		self.select_task({"name": self.name, "action":self.action})
-		if self.task_list is None:
+		self.select_tasks({"name": self.name, "action":self.action})
+		if self.task is None:
 			print "Task not found."
 			self.create_task()
 		else:
-			
 			self.show_task()		
 		
 		
 	def create_task(self):
 		'''create one specific task'''
 		if ask_yes_no("Do you want to create a new project?"):
-			del self.task.raw_data
+			print self.__dict__
 			self.schedule_task()
 			self.run_task()
 			return "Sucessfully created '%s' task for project '%s'."%(self.task.action,self.task.name)
 		else: sys.exit()
+	
 	def select_task(self, query):
 		self.task = self.COLL.find_one(query)
+		return self.task
 		
 	def select_tasks(self, query):
 		'''show tasks that match the filter with a specific order return the set of tasks'''
 		self.task_list = list(self.COLL.find(query))
 		
+		self.task = None
 		if len(self.task_list) == 0:
 			self.task_list = None
 			return None
 		else:
 			if len(self.task_list) == 1:
-				task = "task"
 				self.task = self.task_list[0]
+				task = "task"
+				
 			else:
 				task = "tasks"
-				self.task = None
 			print "\n", len(self.task_list), "%s stored in %s database for %s:'%s'"%(task, str(TASK_MANAGER_NAME), str(query.keys()[0]), str(query.values()[0]))
 			return len(self.task_list)	
 			
 	def show_task(self):
-		if self.task_list > 0:
+		if self.task_list is not None:
 			#print "%s: %s"%(order.capitalize(), query[str(order)])
-			
 			print "\n"
 			print self.name.upper()
 			print "____________________\n"
@@ -205,6 +206,7 @@ class Worker(object):
 				self.COLL.update({"_id":self.task["_id"]}, {"$set":{"query": self.query}})
 				return "Sucessfully updated query to : %s on crawl job of project %s" %(self.query, self.name)
 			elif self.scope == "k":
+			
 				
 				self.COLL.update({"_id":self.task["_id"]},{"$set":{"key": self.key}})
 				print "Sucessfully added a new BING API KEY to crawl job of project %s"%(self.name)
@@ -217,49 +219,70 @@ class Worker(object):
 							return c.status
 					except KeyError:
 						return "Unable to search new seeds beacause no query has been set.\nTo set a query to your crawl project '%s' type:\n python crawtext.py %s -q \"your awesome query\"" %(self.name, self.name)
-				
-				return
-						
 			else:
-				#self.COLL.update(self.task["_id"], {"$set":{self.values[0], getattr(self, str(self.values[0]))}})
-				#print self.values[0], getattr(self, self.values[0])
+				return self.update_sources()	
 				
-				
-				self.COLL.update({"_id":self.task["_id"]},{"$set":{self.values[0]: getattr(self, self.values[0])}})
-				print "Sucessfully added a new %s \"%s\" to crawl job of project %s"%(self.values[0], getattr(self, self.values[0]), self.name)
+						
+			
+	def update_sources(self):
+		#self.COLL.update(self.task["_id"], {"$set":{self.values[0], getattr(self, str(self.values[0]))}})
+		print "udpate sources"
+		if self.value is None:
+			self.COLL.update({"_id":self.task["_id"]},{"$set":{"option": self.option}})
+			print "Successfully added option expand for crawl project %s"% self.name
+			c = CrawlJob(self.task)
+			func = getattr(c,self.option)
+			return func()
+		else:
+			#os.path.isfile(fname)
+
+
+			
+			self.COLL.update({"_id":self.task["_id"]},{"$set":{self.value: getattr(self, self.value)}})
+			print "Sucessfully added a new %s \"%s\" to crawl job of project %s"%(self.value, getattr(self, self.value), self.name)	
+			if self.option == "set":
+				return True	
+			else:
 				self.select_task({"name": self.name, "action": self.action})
 				c = CrawlJob(self.task)
-				func = getattr(c,self.option+"_"+self.values[0])
-				run = func()
-				if run:
-					print run
-				else:
-					print c.status["msg"]
-					
-				#self scope == s
-				
-				
-				
-				#self.file
-				
-				#self.configure_sources()
-			#c = CrawlJob(doc)
-			#c.update_values()
-			#c.set_sources()
+				crawl_func = getattr(c,self.option+"_"+self.value)
+				print crawl_func()
+		#
+		#self.select_task({"name": self.name, "action": self.action})
+		#~ c = CrawlJob(self.task)
+		#~ func = getattr(c,self.option+"_"+self.values[0])
+		#~ if self.option == "expand":
+			#~ return c.expand()
+		#~ else:
+			#~ print self.option+"_"+self.values[0]
+			#~ run = func()
+			#~ if run:
+				#~ print run
+			#~ else:
+				#~ print c.status
+			
+		#self scope == s
 		
+		
+		
+		#self.file
+		
+		#self.configure_sources()
+	#c = CrawlJob(doc)
+	#c.update_values()
+	#c.set_sources()	
 	
 	def update_project(self):
 		self.select_task({"name": self.task.name})
 		#values = [[k, v] for k,v in doc.items() if k != "name"]
 		if self.task_list is None:
 			print "No project%s found" %self.name
-			self.create_task()
+			return self.create_task()
 		else:
 			for n in self.task_list:
 				#~ print n["name"], n["_id"]
 				#~ print self.data, getattr(self, str(self.value))
-				print self.COLL.update(n["id"],{"$set":{self.data: getattr(self, self.value)}})
-				
+				print self.COLL.update(n["id"],{"$set":{self.data: getattr(self, self.value)}})	
 			return "Succesfully updated the entire project %s with new params %s" %(self.name, self.value)
 		
 	def refresh_task(self, name, action="crawl"):
@@ -314,8 +337,9 @@ class Worker(object):
 		return "Sucessfully scheduled Archive job for %s Next run will be executed in 3 minutes" %self.url
 	
 	def start(self):
-		self.action = crawl
-		CrawlJob(self.__dict__)
+		pass
+		#self.action = crawl
+		#CrawlJob(self.__dict__)
 		
 		
 			
