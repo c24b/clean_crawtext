@@ -155,11 +155,12 @@ class CrawlJob(object):
 		
 	def get_bing(self, key=None, query=None):
 		''' Method to extract results from BING API (Limited to 5000 req/month) automatically sent to sources DB ''' 
+		self.status = {}
 		if query is None:
 			query = self.query
 		if key is None:
 			key = self.key
-					
+		self.status["scope"] = "search seeds from BING"			
 		try:
 			#https://api.datamarket.azure.com/Bing/Search/v1/Composite?Sources=%27web%2Bnews%27&Query=%27ebola%27
 			r = requests.get(
@@ -168,7 +169,7 @@ class CrawlJob(object):
 						'$format' : 'json',
 						'$top' : 100,
 						'Query' : '\'%s\'' %query,
-					},
+					},	
 					auth=(key, key)
 					)
 			r.raise_for_status()
@@ -177,14 +178,16 @@ class CrawlJob(object):
 				i = i+1
 				self.insert_url(e["Url"],origin="bing")
 			self.seeds_nb = i
-			self.status = True
+			self.status["status"] = True
 			
 		except Exception as e:
-			self.status_code = r.status_code
-			self.error_type = "Error fetching results from BING API. %s" %e.args
-			self.db.logs.insert({"status_code":self.status_code,"error_type": self.error_type, "key":key, "query": query})
-			self.status = False
-		return self.status
+			
+			
+			self.status["code"] = r.status_code
+			self.status["msg"] = "Error fetching results from BING API. %s" %e.args
+			self.status["status"] = False
+			
+		return self.status["status"]
 		
 	def get_local(self, afile = ""):
 		''' Method to extract url list from text file'''

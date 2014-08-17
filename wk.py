@@ -116,9 +116,7 @@ class Worker(object):
 				setattr(self, k, v)
 				
 			return True
-	def run(self):
-		print "Running"
-		return self
+		
 	def show_user(self):
 		
 		user_data = [n for n in self.COLL.find({"user": self.user})]
@@ -207,9 +205,7 @@ class Worker(object):
 				self.COLL.update({"_id":self.task["_id"]}, {"$set":{"query": self.query}})
 				return "Sucessfully updated query to : %s on crawl job of project %s" %(self.query, self.name)
 			elif self.scope == "k":
-				#~ print type(self.key)
-				#~ print self.task["_id"]
-				print self.COLL.update({"_id":self.task["_id"]},{"$set":{"key": self.key}})
+				self.COLL.update({"_id":self.task["_id"]},{"$set":{"key": self.key}})
 				print "Sucessfully add a new BING API KEY to crawl job of project %s"%(self.name)
 				if self.option == "append":
 					c = CrawlJob(self.task)
@@ -217,10 +213,12 @@ class Worker(object):
 						if c.get_bing() is True:
 							return "%s seeds from search successfully added to sources of crawl project '%s'" %(c.nb_seeds, self.name)
 						else:
-							return c.error_type
+							return c.status
 					except KeyError:
 						return "Unable to search new seeds beacause no query has been set.\nTo set a query to your crawl project '%s' type:\n python crawtext.py %s -q \"your awesome query\"" %(self.name, self.name)
-					
+				
+				return
+						
 			else:
 				#self.file
 				#self.COLL.update(self.task["_id"], {"$set":{self.values[0], getattr(self, str(self.values[0]))}})
