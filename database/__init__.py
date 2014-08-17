@@ -7,7 +7,7 @@ from pymongo import errors
 import re
 
 
-TASK_MANAGER_NAME = "jobs"
+TASK_MANAGER_NAME = "crawtext_jobs"
 TASK_COLL = "job"
 
 class Database(object):

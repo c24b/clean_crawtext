@@ -4,7 +4,7 @@ import sys, os
 from database import *
 import re
 from datetime import datetime as dt
-from job import CrawlJob
+from job import *
 #from abc import ABCMeta, abstractmethod
 
 import docopt
@@ -52,7 +52,7 @@ class Worker(object):
 		self.first_run = 1
 		#no schedule
 		self.scheduled = False
-		
+		self.value = None
 		if validate_email(self.name) is True:
 			self.action = "show_user"
 			self.user = self.name
@@ -81,10 +81,16 @@ class Worker(object):
 			self.action = "create_or_show"
 			for k,v in user_input.items():
 				if v is True and k in self.ACTION_LIST:
-					self.action = k
-					return self
+					if user_input["-s"] is False:
+						self.action = k
+		
+					else:
+						self.action = "update_sources"
+						self.option = k
+						
 				elif v is True and k in self.SCOPE_LIST:
 					self.scope = re.sub("-", "", k)
+					
 				elif v is True and k in self.OPTION_lIST:
 					self.option = k
 					self.action = "update_sources"
@@ -130,6 +136,7 @@ class Worker(object):
 				i = i+1
 				print "%s) %s job for '%s'"%(str(i), n["action"], n["name"])
 			return True
+	
 	def create_or_show(self):
 		if self.action == "create_or_show":
 			#defaut action to create is a crawl
@@ -141,8 +148,7 @@ class Worker(object):
 			self.create_task()
 		else:
 			self.show_task()		
-		
-		
+			
 	def create_task(self):
 		'''create one specific task'''
 		if ask_yes_no("Do you want to create a new project?"):
@@ -206,8 +212,6 @@ class Worker(object):
 				self.COLL.update({"_id":self.task["_id"]}, {"$set":{"query": self.query}})
 				return "Sucessfully updated query to : %s on crawl job of project %s" %(self.query, self.name)
 			elif self.scope == "k":
-			
-				
 				self.COLL.update({"_id":self.task["_id"]},{"$set":{"key": self.key}})
 				print "Sucessfully added a new BING API KEY to crawl job of project %s"%(self.name)
 				if self.option == "append":
@@ -216,62 +220,41 @@ class Worker(object):
 						if c.get_bing() is True:
 							return "%s seeds from search successfully added to sources of crawl project '%s'" %(c.nb_seeds, self.name)
 						else:
-							return c.status
+							return c.status["msg"]
 					except KeyError:
 						return "Unable to search new seeds beacause no query has been set.\nTo set a query to your crawl project '%s' type:\n python crawtext.py %s -q \"your awesome query\"" %(self.name, self.name)
+				
 			else:
 				return self.update_sources()	
 				
-						
-			
 	def update_sources(self):
-		#self.COLL.update(self.task["_id"], {"$set":{self.values[0], getattr(self, str(self.values[0]))}})
-		print "udpate sources"
-		if self.value is None:
+		self.select_task({"name":self.name, "action": "crawl"})
+		c = CrawlJob(self.task)
+		#delete 
+		if self.option == "delete":
+			#all
+			if self.value is None:
+				return c.delete()
+			#url
+			else:
+				self.url = check_url(self.url)[-1]
+				return c.delete_url(self.url)
+		#expand
+		elif self.option == "expand":
 			self.COLL.update({"_id":self.task["_id"]},{"$set":{"option": self.option}})
 			print "Successfully added option expand for crawl project %s"% self.name
-			c = CrawlJob(self.task)
-			func = getattr(c,self.option)
-			return func()
+			return c.expand()
+			
 		else:
-			#os.path.isfile(fname)
-
-
-			
+			#set
 			self.COLL.update({"_id":self.task["_id"]},{"$set":{self.value: getattr(self, self.value)}})
-			print "Sucessfully added a new %s \"%s\" to crawl job of project %s"%(self.value, getattr(self, self.value), self.name)	
+			print "Sucessfully added a new %s \"%s\" to crawl job of project %s"%(self.value, getattr(self, self.value), self.name)		
 			if self.option == "set":
-				return True	
-			else:
-				self.select_task({"name": self.name, "action": self.action})
-				c = CrawlJob(self.task)
-				crawl_func = getattr(c,self.option+"_"+self.value)
-				print crawl_func()
-		#
-		#self.select_task({"name": self.name, "action": self.action})
-		#~ c = CrawlJob(self.task)
-		#~ func = getattr(c,self.option+"_"+self.values[0])
-		#~ if self.option == "expand":
-			#~ return c.expand()
-		#~ else:
-			#~ print self.option+"_"+self.values[0]
-			#~ run = func()
-			#~ if run:
-				#~ print run
-			#~ else:
-				#~ print c.status
-			
-		#self scope == s
-		
-		
-		
-		#self.file
-		
-		#self.configure_sources()
-	#c = CrawlJob(doc)
-	#c.update_values()
-	#c.set_sources()	
-	
+				return
+			#append
+			else:	
+				return c.get_local()
+				
 	def update_project(self):
 		self.select_task({"name": self.task.name})
 		#values = [[k, v] for k,v in doc.items() if k != "name"]
@@ -289,20 +272,6 @@ class Worker(object):
 		'''after a run update the last_run and set nb_run how to log msg?'''
 		pass	
 	
-	def delete_project(self, doc):
-		'''delete project and archive results'''
-		#Results and logs are saved in the database of the project.\nTo see stats type:\n\t python crawtext.py %s report\nTo have direct acess to database, type:\n\t mongo %s\n\t>db.results.find()\n\t>db.logs.find()\n\t>db.sources.find()" %(job['name'], job['action'])
-		self.select_tasks({"name":job["name"]}, "name")
-		if self.task_list is None:
-			return "No project %s found. Project can't be deleted" %job["name"]
-		for t in self.task_list:
-			self.COLL.remove(t)
-		j = ExportJob(doc)
-		log = j.run()
-		db = Database(job["name"])
-		db.use_coll("results")
-		db.drop_database(job["name"])
-		return "Project %s deleted. All data of this project has been archived in %s" %log
 	
 	def schedule_task(self):
 		'''schedule task inserting into db'''
@@ -316,6 +285,7 @@ class Worker(object):
 			w = Worker()
 			w.action = action
 			self.COLL.insert(w.__dict__)
+		
 		return "Project %s with crawl, report and export has been sucessfully scheduled and will be run next %s" %(self.name, self.repeat)
 			
 	def unschedule_task(self):
@@ -336,17 +306,56 @@ class Worker(object):
 		self.COLL.insert(self.__dict__)
 		return "Sucessfully scheduled Archive job for %s Next run will be executed in 3 minutes" %self.url
 	
+	def delete(self):
+		'''delete project and archive results'''
+		self.select_task({"name":self.name, "action":"crawl"})
+		if self.task is None:
+			return "No active crawl job found for %s" %self.name
+		else:
+			self.COLL.remove({"name":self.name})
+			self.select_tasks({"name":self.name})
+			if self.task_list is not None:
+				print "Before deleting project :\n****Archiving*****" 
+				e = ExportJob(self.name)
+				e.run()
+				db = Database(self.name)
+				
+				db.client.drop_database(self.name)
+			return "Project %s sucessfully deleted." %self.name
+	
+	
 	def start(self):
-		pass
-		#self.action = crawl
-		#CrawlJob(self.__dict__)
-		
-		
+		self.select_task({"name":self.name, "action":"crawl"})
+		if self.task is None:
+			return "No active crawl job found for %s" %self.name
+		else:
+			e = CrawlJob(self.task)
+			return e.run()
+	def stop(self):
+		self.select_task({"name":self.name, "action":"crawl"})
+		if self.task is None:
+			return "No active crawl job found for %s" %self.name
+		else:
+			e = CrawlJob(self.task)
+			return e.stop()		
 			
+	def report(self):
+		e = ReportJob(self.name)
+		return e.run()
+	
+	def export(self):
+		self.select_task({"name":self.name, "action":"crawl"})
+		if self.task is None:
+			print "No active crawl job found for %s" %self.name
+		else:	
+			e = ExportJob(self.name)
+			return e.run()
+		
 	def process(self, user_input):
 		self.task_from_ui(user_input)
 		func = getattr(self,self.action)
 		return func()
+		
 				
 class ArchiveJob(Worker):
 	def run(self):

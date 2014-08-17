@@ -9,13 +9,12 @@ Usage:
 	crawtext.py archive [ -f <format> ] <url>
 	crawtext.py <name>
 	crawtext.py <user>
+	crawtext.py <archive_url>
 	crawtext.py report <name> 
 	crawtext.py export <name> 
 	crawtext.py delete <name>
 	crawtext.py start <name>
 	crawtext.py stop <name>
-	crawtext.py list projects
-	crawtext.py list archives
 	crawtext.py <name> -u <email>
 	crawtext.py <name> -q <query>
 	crawtext.py <name> -k set <key>
@@ -52,7 +51,8 @@ Options:
 	# pour supprimer toutes les sources :			crawtext.py pesticides -s delete
 	Récurrence
 	# pour définir la récurrence :                	crawtext.py pesticides -r (monthly|weekly|daily)
-	Executer un projet								crawtext.py run pesticides
+	Executer un projet								crawtext.py start pesticides
+	Stopper un projet								crawtext.py stop pesticides
 	
 '''
 

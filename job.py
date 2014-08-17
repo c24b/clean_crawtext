@@ -13,7 +13,7 @@ import sys
 from multiprocessing import Pool
 import subprocess
 from utils.url import *
-
+import zipfile
 from query import Query
 		
 class Job(object):
@@ -266,15 +266,10 @@ class CrawlJob(object):
 			return "url %s was not in sources. Check url format" %url
 					
 	def delete(self):
-		#self.db.sources.copy
-		archive_name = "Sources_archives_%s_%s.csv" %(self.name, str(datetime.datetime.today()))
-		print archive_name
-		#c = "mongoexport -d %s -c %s --jsonArray -o Sources_archives_%s_%s.json"%(self.name,"sources", self.name, str(datetime.datetime.today())	
-		c = "mongoexport -d %s -c %s --csv -o -f url,origin,date --fieldFile url,origin,date Sources_archives_%s_%s.json"%(self.name,"sources", archive_name)	
-		subprocess.call(c.split(" "), stdout=open(os.devnull, 'wb'))
-		print "Saving sources config to %s" %(archive_name)
-		self.db.sources.drop()
-		return 'Every single seed has been deleted from project.\n No way back!...Unless you configure seeds again from archives csv or manually.\nType python crawtext.py --h for options'		
+		e = ExportJob(self.name, "sources")
+		print e.run()
+		print self.db.sources.drop()
+		return 'Every single seed has been deleted from crawl job of project %s.'%self.name		
 		
 	def collect_sources(self):
 		''' Method to add new seed to sources and send them to queue if sourcing is deactivate'''
@@ -351,17 +346,16 @@ class CrawlJob(object):
 			print "Crawl done sucessfully in %s s" %str(datetime.timedelta(seconds=elapsed))
 			print "To export results, logs, sources:\n python crawtext.py export %s" %self.name 
 			return True
-			
-			
-			
+	
+	def stop(self):		
+		print self.db.drop_collection("queue")	
+		return "Current crawl job %s stopped." %self.name	
 	
 	
 class ReportJob(object):
-	def __init__(self, doc):
-		
+	def __init__(self, name):
 		self.date = datetime.now()
-		for k, v in doc.items():
-			setattr(self,k,v) 	
+		self.name = name
 		self.db = Database(self.name)
 		
 	def run(self):
@@ -379,23 +373,34 @@ class ArchiveJob(object):
 		return True
 
 class ExportJob(object):
-	#~ def __init__(self, doc):
-		#~ self.date = datetime.now()
-		#~ for k, v in doc.items():
-			#~ setattr(self,k,v) 	
+	def __init__(self, name, coll_type = None):
+		self.date = datetime.now()
+		self.date = self.date.strftime('%d-%m-%Y_%H:%M')
+		self.name = name
+		self.coll_type = coll_type 
+	
 	def run(self):
 		print "Exporting data from", self.name
-		
-		for n in ['sources', 'results', 'logs']:
-			c = "mongoexport -d %s -c %s --jsonArray -o Export_%s_%s.json"%(self.name,n, self.name, n)	
-			print "- exporting %s" %(n)
+		if self.coll_type is None:			
+			for n in ['sources', 'results', 'logs']:
+				self.filename = "Export_%s_%s_%s.json" %(self.name, n, str(self.date))
+				c = "mongoexport -d %s -c %s -o %s"%(self.name,n, self.filename)	
+				print "- exporting %s" %(n)
+				subprocess.call(c.split(" "), stdout=open(os.devnull, 'wb'))
+				print "Sucessfully exported data project %s in json file" %self.name
+				zipf = re.split("\.",self.filename)[0] 
+				subprocess.call(['zip', zipf, self.filename])
+			#print "Exporting %s" %self.name
+			return True
+		else:
+			self.filename = "Export_%s_%s_%s.json" %(self.name, self.coll_type, str(self.date))
+			c = "mongoexport -d %s -c %s -o %s --jsonArray"%(self.name,self.coll_type, self.filename)	
+			print "-> exporting %s to %s" %(self.coll_type, self.filename)
 			subprocess.call(c.split(" "), stdout=open(os.devnull, 'wb'))
-			print "Sucessfully exported data project %s in json file" %self.name
-		#subprocess.call(['zip', +zipf+".zip", s.local_filename])
-		#print "Exporting %s" %self.name
-		return True
-		
-		
+			print "Sucessfully exported %s project %s in json file" %(self.coll_type, self.name)
+			zipf = re.split("\.",self.filename)[0] 
+			subprocess.call(['zip', zipf, self.filename])
+			return True
 		
 		
 
