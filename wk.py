@@ -230,7 +230,11 @@ class Worker(object):
 				self.select_task({"name": self.name, "action": self.action})
 				c = CrawlJob(self.task)
 				func = getattr(c,self.option+"_"+self.values[0])
-				if func():
+				run = func()
+				if run:
+					print run
+				else:
+					print c.status["msg"]
 					
 				#self scope == s
 				

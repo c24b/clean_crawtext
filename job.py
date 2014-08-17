@@ -151,7 +151,8 @@ class CrawlJob(object):
 		self.db.create_colls(['sources', 'results', 'logs', 'queue'])	
 	
 	def append_file(self):
-		return self.get_local()
+		print self.get_local()
+		return True
 		
 		
 	def get_bing(self, key=None, query=None):
@@ -203,18 +204,24 @@ class CrawlJob(object):
 			
 			i = 1
 			for url in open(afile).readlines():
-				
+				if url == "\n":
+					continue
+				url = re.sub("\n", "", url)
 				status, status_code, error_type, url = check_url(url)
+				print status
 				if status is True:
 					i = i+1
 					self.insert_url(url, origin=afile)
 				else:
-					self.db.logs.insert({"url": url, "status": status, "msg": self.error_type, "scope": self.scope, "code":status_code, "file": afile})
+					self.db.logs.insert({"url": url, "status": status, "msg": error_type, "scope": self.status["scope"], "code":status_code, "file": afile})
 			self.seeds_nb = i
 			self.status["status"] = True
-		except Exception:
+			print "Successfully adding %s url form sources file." %self.seeds_nb
+			return True
+		except Exception as e:
+			print e.args
 			self.status["code"] = 602
-			self.status["msg"]= "Error fetching results from file: %s.\nFile doesn't not exists or has a wrong name.\nPlease set up a correct filename:\n\t crawtext.py %s -s append your_sources_file.txt" %(self.filename, self.name)
+			self.status["msg"]= "Error fetching results from file: %s.\nFile doesn't not exists or has a wrong name.\nPlease set up a correct filename:\n\t crawtext.py %s -s append your_sources_file.txt" %(self.file, self.name)
 			
 		return self.status
 	
