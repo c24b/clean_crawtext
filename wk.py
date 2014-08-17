@@ -285,7 +285,6 @@ class Worker(object):
 			w = Worker()
 			w.action = action
 			self.COLL.insert(w.__dict__)
-		
 		return "Project %s with crawl, report and export has been sucessfully scheduled and will be run next %s" %(self.name, self.repeat)
 			
 	def unschedule_task(self):
