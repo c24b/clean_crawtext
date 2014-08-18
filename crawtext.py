@@ -15,7 +15,7 @@ Usage:
 	crawtext.py delete <name>
 	crawtext.py start <name>
 	crawtext.py stop <name>
-	crawtext.py <name> -u <email>
+	crawtext.py <name> -u <user>
 	crawtext.py <name> -q <query>
 	crawtext.py <name> -k set <key>
 	crawtext.py <name> -k append [<key>]
@@ -25,7 +25,7 @@ Usage:
 	crawtext.py <name> -s expand
 	crawtext.py <name> -s delete [<url>]
 	crawtext.py <name> -s delete					
-	crawtext.py <name> -r <month>
+	crawtext.py <name> -r <repeat>
 	crawtext.py (-h | --help)
   	crawtext.py --version
   	

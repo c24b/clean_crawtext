@@ -223,7 +223,7 @@ class CrawlJob(object):
 					self.db.logs.insert({"url": url, "status": status, "msg": error_type, "scope": self.status["scope"], "code":status_code, "file": afile})
 			self.seeds_nb = i
 			self.status["status"] = True
-			print "%s urls have been added to seeds from %s" %(self.seeds_nb, self.file)
+			self.status["msg"] = "%s urls have been added to seeds from %s" %(self.seeds_nb, self.file)
 			return True
 		except Exception as e:
 			print e.args[0]
@@ -235,7 +235,8 @@ class CrawlJob(object):
 	
 	def expand(self):
 		'''Expand sources url adding results urls collected from previous crawl'''
-		self.status["scope"] = "Extending results and adding it to seeds"
+		self.status = {}
+		self.status["scope"] = "crawl expand"
 		if len(self.db.results.distinct("url")) == 0:
 			self.status["status"] = False
 			self.status["code"] = 603
@@ -249,14 +250,14 @@ class CrawlJob(object):
 					self.insert_url(url, "automatic")
 				self.seed_nb = i
 				self.status["status"] = True
-			return "Succesfully expanded seeds : %s urls have been added from previous results to crawl project %s" %(self.seed_nb, self.name)
+			return True
 				
 	def insert_url(self, url, origin="default"):
 		if url not in self.db.sources.find({"url": url}) and url not in self.db.logs.find({"url": url}):
-			return self.db.sources.insert({"url":url, "origin":origin,"date":[datetime.today()]})
+			self.db.sources.insert({"url":url, "origin":origin,"date":[datetime.today()]})
 		else:
-			return self.db.sources.update({"url":url,"origin":origin, "$push": {"date":datetime.today()}})
-		
+			self.db.sources.update({"url":url,"origin":origin, "$push": {"date":datetime.today()}})
+		return True
 	
 	def delete_url(self, url):
 		if self.db.sources.find_one({"url": url}) is not None:

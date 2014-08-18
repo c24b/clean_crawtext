@@ -25,7 +25,7 @@ class Worker(object):
 	SCOPE_LIST = ["-u", "-r", "-q", "-k", "-s"]
 	OPTION_lIST	= ['add', 'set', 'append', 'delete', 'expand']
 	DATA_C_LIST = ['<url>', '<file>', '<query>', '<key>']
-	DATA_U_LIST = ['<email>', '<month>']
+	DATA_U_LIST = ['<user>', '<repeat>']
 	DATA_A_LIST = ['<format>']
 	
 	
@@ -144,7 +144,6 @@ class Worker(object):
 			
 		self.select_tasks({"name": self.name, "action":self.action})
 		if self.task is None:
-			print "Task not found."
 			self.create_task()
 		else:
 			self.show_task()		
@@ -164,7 +163,7 @@ class Worker(object):
 		
 	def select_tasks(self, query):
 		'''show tasks that match the filter with a specific order return the set of tasks'''
-		self.task_list = list(self.COLL.find(query))
+		self.task_list = [n for n in self.COLL.find(query)]
 		
 		self.task = None
 		if len(self.task_list) == 0:
@@ -177,7 +176,7 @@ class Worker(object):
 				
 			else:
 				task = "tasks"
-			print "\n", len(self.task_list), "%s stored in %s database for %s:'%s'"%(task, str(TASK_MANAGER_NAME), str(query.keys()[0]), str(query.values()[0]))
+			#print "\n", len(self.task_list), "%s stored in %s database for %s:'%s'"%(task, str(TASK_MANAGER_NAME), str(query.keys()[0]), str(query.values()[0]))
 			return len(self.task_list)	
 			
 	def show_task(self):
@@ -243,30 +242,36 @@ class Worker(object):
 		elif self.option == "expand":
 			self.COLL.update({"_id":self.task["_id"]},{"$set":{"option": self.option}})
 			print "Successfully added option expand for crawl project %s"% self.name
-			return c.expand()
-			
+			c.expand()
+			return c.status["msg"]
+		elif self.option == "add":
+			url = check_url(self.url)[-1]
+			c.insert_url(url,"manual")	
+			return "Succesfully added url %s to seeds of crawl job %s"%(url, self.name)
 		else:
 			#set
 			self.COLL.update({"_id":self.task["_id"]},{"$set":{self.value: getattr(self, self.value)}})
-			print "Sucessfully added a new %s \"%s\" to crawl job of project %s"%(self.value, getattr(self, self.value), self.name)		
+			
 			if self.option == "set":
-				return
+				return "Sucessfully added a new %s \"%s\" to crawl job of project %s"%(self.value, getattr(self, self.value), self.name)
 			#append
-			else:	
-				return c.get_local()
-				
+			else:
+				print "Sucessfully added a new %s \"%s\" to crawl job of project %s"%(self.value, getattr(self, self.value), self.name)		
+				c.get_local()
+				return c.status["msg"]
+					
 	def update_project(self):
-		self.select_task({"name": self.task.name})
+		self.select_tasks({"name": self.name})
 		#values = [[k, v] for k,v in doc.items() if k != "name"]
 		if self.task_list is None:
 			print "No project%s found" %self.name
 			return self.create_task()
 		else:
 			for n in self.task_list:
-				#~ print n["name"], n["_id"]
-				#~ print self.data, getattr(self, str(self.value))
-				print self.COLL.update(n["id"],{"$set":{self.data: getattr(self, self.value)}})	
-			return "Succesfully updated the entire project %s with new params %s" %(self.name, self.value)
+				print n["_id"]
+				self.COLL.update({"_id":n["_id"]},{"$set":{self.value: getattr(self, self.value)}})
+				
+			return "Succesfully updated the entire project %s with new value: %s" %(self.name, getattr(self, self.value))
 		
 	def refresh_task(self, name, action="crawl"):
 		'''after a run update the last_run and set nb_run how to log msg?'''
@@ -276,8 +281,8 @@ class Worker(object):
 	def schedule_task(self):
 		'''schedule task inserting into db'''
 		self.first_run = 4*60
-		self.COLL.insert(self.task.__dict__)
-		return "%s on project %s has been sucessfully scheduled to be run next %s" %(self.task.action, self.task.name, self.task.repeat)
+		self.COLL.insert(self.__dict__)
+		return "%s on project %s has been sucessfully scheduled to be run next %s" %(self.action, self.name, self.repeat)
 		
 	def schedule_project(self):
 		'''schedule complete tasks set for one crawl inserting into db'''
