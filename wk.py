@@ -48,11 +48,12 @@ class Worker(object):
 		'''mapping user input into task return job parameters'''
 		self.name = user_input['<name>']
 		self.value = None
+		#user
 		if validate_email(self.name) is True:
 			self.action = "show_user"
 			self.user = self.name
 			return self
-			
+		#archive	
 		elif validate_url(self.name) is True:
 			self.action = "archive"
 			self.url = self.name
@@ -62,23 +63,24 @@ class Worker(object):
 			except KeyError:
 				self.format = "defaut"
 				return self	
+		#archive job
 		elif user_input["archive"] is True:
 			self.action = 'archive'
 			self.url = user_input['<url>']
 			self.name = self.url
 			self.scheduled = True
 			try:
-				self.format = 	user_input['<format>']
+				self.format = user_input['<format>']
 			except KeyError:
 				self.format = "defaut"
 			return self
+		#crawl management or report or export
 		else:
 			self.action = "create_or_show"
 			for k,v in user_input.items():
 				if v is True and k in self.ACTION_LIST:
 					if user_input["-s"] is False:
 						self.action = k
-		
 					else:
 						self.action = "update_sources"
 						self.option = k
@@ -108,19 +110,7 @@ class Worker(object):
 					continue
 			
 			return self
-			
-	def task_from_db(self, query):
-		self.select_tasks(query)
-		
-		if self.task_list is None:
-			print "No task with this query"	
-			return False
-		else:
-			for k,v  in self.task.items():
-				setattr(self, k, v)
 				
-			return True
-		
 	def show_user(self):
 		
 		user_data = [n for n in self.COLL.find({"user": self.user})]
@@ -148,11 +138,7 @@ class Worker(object):
 	def create_task(self):
 		'''create one specific task'''
 		if ask_yes_no("Do you want to create a new project?"):
-			self.next_run = datetime.datetime.now()
-			self.next_run = self.next_run.replace(second = 00)
-			minutes = self.next_run.minute
-			self.next_run = self.next_run.replace(minutes+5)
-			print self.next_run
+			
 			self.schedule_task()
 			#self.run_task()
 			return "Sucessfully created '%s' task for project '%s'."%(self.action,self.name)
@@ -201,10 +187,9 @@ class Worker(object):
 			print "No task for project %s"% self.name
 			
 	def update_crawl(self):
-		
-		print self.next_run
 		print "update _crawl"
 		self.action = "crawl"
+		
 		self.select_task({"name": self.name, "action": self.action})
 		if self.task is None:
 			print "No active crawl has been found for project %s" %self.name
@@ -213,22 +198,14 @@ class Worker(object):
 			print self.scope
 			if self.scope == "q":				
 				self.COLL.update({"_id":self.task["_id"]}, {"$set":{"query": self.query}})
-				if self.next_run == "unset":
-					self.next_run = self.next_run.replace(self.next_run.minute, self.next_run.minute+5) 
-					self.COLL.update({"_id":self.task["_id"]}, {"$set":{"next_run": self.next_run}})
-					
 				return "Sucessfully updated query to : %s on crawl job of project %s" %(self.query, self.name)
 			elif self.scope == "k":
-				
 				self.COLL.update({"_id":self.task["_id"]},{"$set":{"key": self.key}})
 				print "Sucessfully added a new BING API KEY to crawl job of project %s"%(self.name)
 				if self.option == "append":
-					c = CrawlJob(self.task)
+					c = Crawl(self.name)
 					try:
 						if c.get_bing() is True:
-							if self.next_run == "unset":
-								self.next_run = self.next_run.replace(self.next_run.minute, self.next_run.minute+5) 
-								self.COLL.update({"_id":self.task["_id"]}, {"$set":{"next_run": self.next_run}})
 							return "%s seeds from search successfully added to sources of crawl project '%s'" %(c.seeds_nb, self.name)
 						else:
 							return c.status["msg"]
@@ -239,8 +216,7 @@ class Worker(object):
 				return self.update_sources()	
 				
 	def update_sources(self):
-		self.select_task({"name":self.name, "action": "crawl"})
-		c = CrawlJob(self.task)
+		c = Crawl(self.name)
 		#delete 
 		if self.option == "delete":
 			#all
@@ -256,34 +232,21 @@ class Worker(object):
 			self.COLL.update({"_id":self.task["_id"]},{"$set":{"option": self.option}})
 			print "Successfully added option expand for crawl project %s"% self.name
 			c.expand()
-			if self.next_run == "unset":
-				self.next_run = self.next_run.replace(self.next_run.minute, self.next_run.minute+5) 
-				self.COLL.update({"_id":self.task["_id"]}, {"$set":{"next_run": self.next_run}})
 			return c.status["msg"]
 		elif self.option == "add":
 			url = check_url(self.url)[-1]
 			c.insert_url(url,"manual")
-			if self.next_run == "unset":
-				self.next_run = self.next_run.replace(self.next_run.minute, self.next_run.minute+5) 
-				self.COLL.update({"_id":self.task["_id"]}, {"$set":{"next_run": self.next_run}})
 			return "Succesfully added url %s to seeds of crawl job %s"%(url, self.name)
 		else:
 			#set
 			if self.value is not None:
-				print self.value
 				self.COLL.update({"_id":self.task["_id"]},{"$set":{self.value: getattr(self, self.value)}})			
 				if self.option == "set":
-					if self.next_run == "unset":
-						self.next_run = self.next_run.replace(self.next_run.minute, self.next_run.minute+5) 
-						self.COLL.update({"_id":self.task["_id"]}, {"$set":{"next_run": self.next_run}})
 					return "Sucessfully added a new %s \"%s\" to crawl job of project %s"%(self.value, getattr(self, self.value), self.name)
 				#append
 				else:
 					print "Sucessfully added a new %s \"%s\" to crawl job of project %s"%(self.value, getattr(self, self.value), self.name)		
 					c.get_local()
-					if self.next_run == "unset":
-						self.next_run = self.next_run.replace(self.next_run.minute, self.next_run.minute+5) 
-						self.COLL.update({"_id":self.task["_id"]}, {"$set":{"next_run": self.next_run}})
 					return c.status["msg"]
 					
 	def update_project(self):
@@ -295,18 +258,17 @@ class Worker(object):
 		else:
 			for n in self.task_list:
 				self.COLL.update({"_id":n["_id"]},{"$set":{self.value: getattr(self, self.value)}})
-				if self.next_run == "unset":
-					self.next_run = self.next_run.replace(self.next_run.minute, self.next_run.minute+5) 
-					self.COLL.update({"_id":n["_id"]}, {"$set":{"next_run": self.next_run}})
 			return "Succesfully updated the entire project %s with new value: %s" %(self.name, getattr(self, self.value))
 		
-	def refresh_task(self, name, action="crawl"):
+	def refresh_task(self):
 		'''after a run update the last_run and set nb_run how to log msg?'''
-		#next_run with repeat
-		#
-		pass	
-	
-	
+		self.last_run = self.next_run
+		if self.repeat == "week":
+			self.next_run = self.last_run.replace(day = self.last_run.day+7)
+		else:		
+			self.next_run = self.last_run.replace(str(self.repeat),self.last_run.str(self.repeat)+1)
+		return self.last_run, self.next_run
+		
 	def schedule_task(self):
 		'''schedule task inserting into db'''
 		self.COLL.insert(self.__dict__)
@@ -322,20 +284,19 @@ class Worker(object):
 			
 	def unschedule_task(self):
 		'''delete a specific task'''
-		self.select_tasks({"name":self.task.name, "action":self.task.action})
+		self.select_tasks({"name":self.name, "action":self.action})
 		if len(self.task_list) == 0:
-				return "No project %s with task %s has been found." %(self.task.name,self.task.action)
+				return "No project %s with task %s has been found." %(self.name,self.action)
 		else:	
-			self.COLL.remove({"name": self.task.name, "action":self.task.action})
+			self.COLL.remove({"name": self.name, "action":self.action})
 			#here change name to archives_db_name_date
-			return "Task %s of project %s has been sucessfully deleted." 
+			return "Task %s of project %s has been sucessfully unscheduled." 
 			
-		return "Task %s of project %s has been sucessfully deleted" %(self.task.action, self.task.name)
+		return "Task %s of project %s has been sucessfully unscheduled" %(self.action, self.name)
 	
 	def archive(self):
-		self.repeat = None
-		self.next_run = self.start_date.replace(self.start_date.minute, self.start_date.minute+3)
-		self.COLL.insert(self.__dict__)
+		a = Archive(self.name)
+		self.COLL.insert(a.__dict__)
 		return "Sucessfully scheduled Archive job for %s Next run will be executed in 3 minutes" %self.url
 	
 	def delete(self):
@@ -348,7 +309,7 @@ class Worker(object):
 			self.select_tasks({"name":self.name})
 			if self.task_list is not None:
 				print "Before deleting project :\n****Archiving*****" 
-				e = ExportJob(self.name)
+				e = Export(self.name)
 				e.run()
 				db = Database(self.name)
 				
@@ -356,34 +317,26 @@ class Worker(object):
 			return "Project %s sucessfully deleted." %self.name
 	
 	def set_next_run(self):
-		if self.next_run = "unset":
+		if self.next_run == "unset":
 			self.next_run = datetime.datetime.now()
 			self.next_run = self.next_run.replace( second=0, microsecond=0)
 			mins = self.next_run.minute+5
 			self.next_run = self.next_run.replace(minute = mins) 
 			return self.next_run
-		
-	def update_next_run(self):
-		self.last_run = self.next_run
-		if self.repeat = "week":
-			self.next_run = self.last_run.replace(day = self.last_run.day+7)
-		else:	
-			self.next_run = self.last_run.replace(str(self.repeat) = self.last_run.str(self.repeat)+1)
-		return self.last_run, self.next_run
 			
 	def start(self):
-		self.select_task({"name":self.name, "action":"crawl"})
 		if self.task is None:
 			return "No active crawl job found for %s" %self.name
 		else:
-			e = CrawlJob(self.task)
+			e = Crawl(self.name)
 			return e.run_job()
+	
 	def stop(self):
 		self.select_task({"name":self.name, "action":"crawl"})
 		if self.task is None:
 			return "No active crawl job found for %s" %self.name
 		else:
-			e = CrawlJob(self.task)
+			e = Crawl(self.task)
 			return e.stop()		
 			
 	def report(self):
@@ -395,7 +348,7 @@ class Worker(object):
 		if self.task is None:
 			print "No active crawl job found for %s" %self.name
 		else:	
-			e = ExportJob(self.name)
+			e = Export(self.name)
 			return e.run_job()
 		
 	def process(self, user_input):
@@ -404,7 +357,7 @@ class Worker(object):
 		return func()
 		
 				
-class ArchiveJob(Worker):
+class Archive(Worker):
 	def run(self):
 		print "Archiving %s" %self.url
 		

@@ -3,6 +3,7 @@
 
 import re
 import os, sys
+
 from validate_email import validate_email
 from datetime import datetime
 from utils import yes_no
@@ -16,147 +17,17 @@ from utils.url import *
 import zipfile
 from query import Query
 		
-class Job(object):
-	def __init__(self, doc):
-		self.action = doc["action"]
-		self.user = None
-		self.name = doc["name"]
-		self.start_date = datetime.now()
-		self.repeat = "month"
-		self.nb_run = 0
-		self.last_run = None
-		self.next_run = self.config_next_run(self.start_date, self.repeat)
-		for k,v in doc.iteritems():
-			setattr(self, k,v)
-		#~ self.db = Database(doc["name"])
-		#~ self.coll = self.db.create_colls("results", "log", "queue")
-		
-	def update(self, values):
-		for k, v in values.iteritems():
-			if k == "repeat":
-				self.repeat = v
-				self.next_run = self.config_next_run(self.start_date, self.repeat)
-			set(self, k, v)
-		return self
-				
-	def config_next_run(self, start_day, repeat):
-		next_run = None
-		start_job = start_day
-		if repeat == "day":
-			next_run = start_job.replace(day=start_job.day+1)
-		elif repeat == "week":
-			next_run = start_job.replace(day=start_job.day+7)
-			
-		elif repeat == "month":
-			next_run = start_job.replace(month=start_job.month+1)
-			
-		elif repeat == "year":
-			next_run = start_job.replace(year=start_job.month+1)
-		else:
-			pass
-		return next_run
-		
-	@staticmethod
-	def run(job):
-		db = Database(TASK_MANAGER_NAME)
-		collection = db.use_coll(TASK_COLL)
-		if job["action"] == "archive":
-			c = ArchiveJob(job)
-			os.spawnl(os.P_NOWAIT, c.run())
-			return "Archiving %s. An email will be sent when finished" %job["url"]
-		elif job['action'] == "report":
-			r = ReportJob(job)
-			return r.run()
-		elif job['action'] == "export":
-			e = ExportJob(job)
-			return e.run()
-		elif job['action'] == "archive":
-			a = ArchiveJob(job)
-			os.spawnl(os.P_NOWAIT, a.run())
-			return "Archiving %s. A email will be sent when finished" %job["url"]	
-		elif job['action'] == "start":
-			has_job = collection.find_one({"name": job['name'], "action":"crawl"})
-			if has_job is not None:
-				c = CrawlJob(has_job)
-				#return c.run()
-				os.spawnl(os.P_NOWAIT, c.run())
-				return "Crawling %s. An email will be sent when finished" %job["name"]
-			else:
-				return False
-		elif job["action"] == "crawl":
-			has_job = collection.find_one({"name": job['name'], "action":"crawl"})
-			if has_job is not None:
-				c = CrawlJob(has_job)
-				#return c.run()
-				os.spawnl(os.P_NOWAIT, c.run())
-				return "Crawling %s. An email will be sent when finished" %job["name"]
-			else:
-				
-				return False	
-		elif job['action'] == "delete":
-			c = DeleteJob(job)
-			if c.run() is True:
-				return "%s has been sucessfully unscheduled and deleted.\n Results and logs are saved in an archivesdatabase of the project.\nTo have direct acess to archived database, type:\n\t mongo %s\n\t>db.results.find()\n\t>db.logs.find()\n\t>db.sources.find()" %(job['name'], c.new_name)
-			else:
-				return "Error while deleting project"
-		else:
-			return "Job project not properly configured.\n Type python crawtext.py %s to see parameters" %job["name"]
-
-class DeleteJob(object):
-	def __init__(self, job): 
-		self.name = job["name"]
-		self.db_task = Database(TASK_MANAGER_NAME)
-		self.t_collection = self.db_task.use_coll(TASK_COLL)
-		self.job = job
-		self.db_data = Database(job["name"])
-		self.client = self.db_data.client
-		
-	def run_job(self):
-		n = [n for n in self.t_collection.find({"name": self.job['name']})]
-		if len(n) == 0:
-			print "No project %s has been found. Check the name of your project" %(self.job['name'])
-			return False
-		else:
-			self.t_collection.remove({"name": self.job['name']})
-			print "Unscheduling task"
-			old_name = str(self.job["name"])
-			date = datetime.today()
-			self.new_name = "__%s_ARCHIVES__%s-%s-%s"%(old_name, date.year, date.month, date.day)
-			try:
-				print self.client.copy_database(old_name,self.new_name, 'localhost')
-				print "Renaming projects database %s into %s" %(old_name, self.new_name)
-			except Exception as e:
-				print "e"
-			print self.client.drop_database(old_name)
-			print "Deleting projects database %s ." %old_name
-		return True
-
 			 
-class CrawlJob(object):
-	def __init__(self, job): 
-		self.option = None
-		self.file  = None
-		self.key = None
-		self.query = None
+class Crawl(object):
+	def __init__(self, name): 
+		#mapping from task_manager
+		DB = Database(TASK_MANAGER_NAME)
+		COLL = DB.use_coll(TASK_COLL)
+		values = COLL.find_one({"name":self.name, "action": "crawl"})
 		for k,v in job.items():
 			setattr(self, k, v)
-			
-		self.date = datetime.now()
-		#required properties
 		self.db = Database(self.name)
-		#~ self.sources = self.db.create_coll('sources')
-		#~ self.results = self.db.create_coll('results')
-		#~ self.logs = self.db.create_coll('logs')
-		#~ self.queue = self.db.create_coll('queue')
 		self.db.create_colls(['sources', 'results', 'logs', 'queue'])	
-	
-	def append_file(self):
-		return self.get_local()
-		
-	def set_file(self):
-		'''Already updated in TASK DB''' 
-		pass
-		
 		
 	def get_bing(self, key=None, query=None):
 		''' Method to extract results from BING API (Limited to 5000 req/month) automatically sent to sources DB ''' 
@@ -205,7 +76,7 @@ class CrawlJob(object):
 	def get_local(self, afile = ""):
 		''' Method to extract url list from text file'''
 		self.status = {}
-		self.status["scope"] = "search seeds from file"
+		self.status["scope"] = "crawl search bing"
 		if afile == "":
 			afile = self.file
 		
@@ -362,8 +233,7 @@ class CrawlJob(object):
 		print self.db.drop_collection("queue")	
 		return "Current crawl job %s stopped." %self.name	
 	
-	
-class ReportJob(object):
+class Report(object):
 	def __init__(self, name):
 		self.date = datetime.now()
 		self.name = name
@@ -376,14 +246,18 @@ class ReportJob(object):
 			f.write((self.db.stats()).encode('utf-8'))
 		print "Successfully generated report for %s\nReport name is %s and stored in current directory" %(self.name, filename)
 		return True
-		
-		
-class ArchiveJob(object):
+			
+class Archive(object):
+	def __init__(self, name):
+		self.date = datetime.now()
+		self.date = self.date.strftime('%d-%m-%Y_%H:%M')
+		self.name = name
+		self.url = name
 	def run_job(self):
 		print "Archiving %s" %self.url
 		return True
 
-class ExportJob(object):
+class Export(object):
 	def __init__(self, name, coll_type = None):
 		self.date = datetime.now()
 		self.date = self.date.strftime('%d-%m-%Y_%H:%M')
