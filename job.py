@@ -111,7 +111,7 @@ class DeleteJob(object):
 		self.db_data = Database(job["name"])
 		self.client = self.db_data.client
 		
-	def run(self):
+	def run_job(self):
 		n = [n for n in self.t_collection.find({"name": self.job['name']})]
 		if len(n) == 0:
 			print "No project %s has been found. Check the name of your project" %(self.job['name'])
@@ -276,7 +276,7 @@ class CrawlJob(object):
 		''' Method to add new seed to sources and send them to queue if sourcing is deactivate'''
 		if self.option == "expand":
 			#print "Automatically expanding sources from last results"
-			self.extend()
+			self.expand()
 		if self.file is not None:
 			print "Getting seeds from file %s" %self.file
 			self.get_local(self.file)
@@ -298,27 +298,35 @@ class CrawlJob(object):
 				self.db.queue.insert({"url":url})
 		return True
 				
-	def run(self):
+	def run_job(self):
+		self.status = {}
+		self.status["scope"] = "running crawl job"
 		if self.query is None:
-			print "Unable to start crawl: no query has been set."
+			self.status["msg"] = "Unable to start crawl: no query has been set."
+			self.status["code"] = 600.1
+			self.status["status"] = False
 			return False 
 		else:
 			query = Query(self.query)
 			
 		seeds = self.collect_sources()
 		if self.db.sources.count() == 0:
-			print "Unable to start crawl: no seeds have been set."
+			self.status["msg"] = "Unable to start crawl: no seeds have been set."
+			self.status["code"] = 600.1
+			self.status["status"] = False
 			return False
 		else:
 			self.send_seeds_to_queue()
 		
 		start = datetime.now()
 		if self.db.queue.count == 0:
-			print "Error while sending urls into queue: queue is empty"
+			self.status["msg"] = "Error while sending urls into queue: queue is empty"
+			self.status["code"] = 600.1
+			self.status["status"] = False
 			return False
 			
 		else:
-			print "running crawl on %i sources with query '%s'" %(len(self.db.sources.distinct("url")), self.query)
+			self.status["msg"] = "running crawl on %i sources with query '%s'" %(len(self.db.sources.distinct("url")), self.query)
 				
 			while self.db.queue.count > 0:	
 				for url in self.db.queue.distinct("url"):
@@ -344,8 +352,10 @@ class CrawlJob(object):
 						break
 			end = datetime.now()
 			elapsed = end - start
-			print "Crawl done sucessfully in %s s" %str(datetime.timedelta(seconds=elapsed))
-			print "To export results, logs, sources:\n python crawtext.py export %s" %self.name 
+			delta = end-start
+
+			self.status["msg"] = "%s. Crawl done sucessfully in %s s" %(self.status["msg"],str(elapsed))
+			self.status["status"] = True
 			return True
 	
 	def stop(self):		
@@ -359,7 +369,7 @@ class ReportJob(object):
 		self.name = name
 		self.db = Database(self.name)
 		
-	def run(self):
+	def run_job(self):
 		print "Report for crawl results of %s" %self.name
 		filename = "Report_%s_%d-%d-%d-%d:%d.txt" %(self.name, self.date.year, self.date.month, self.date.day,self.date.hour, self.date.minute)
 		with open(filename, 'a') as f:
@@ -369,7 +379,7 @@ class ReportJob(object):
 		
 		
 class ArchiveJob(object):
-	def run(self):
+	def run_job(self):
 		print "Archiving %s" %self.url
 		return True
 
@@ -380,7 +390,7 @@ class ExportJob(object):
 		self.name = name
 		self.coll_type = coll_type 
 	
-	def run(self):
+	def run_job(self):
 		print "Exporting data from", self.name
 		if self.coll_type is None:			
 			for n in ['sources', 'results', 'logs']:
