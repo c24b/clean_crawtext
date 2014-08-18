@@ -39,10 +39,12 @@ class TaskThread(threading.Thread):
 			status = job.run_job()
 			
 			if status is True:	
-				print self.COLL.update({"_id": n["_id"]},{"$inc":{"nb_run": +1},"$set":{"last_run":datetime.today()}})
+				self.COLL.update({"_id": n["_id"]},{"$inc":{"nb_run": +1},"$set":{"last_run":datetime.today()}})
+				ExportJob(job.name)
 			else:
-				print self.COLL.update({"_id": n["_id"]},{"$inc":{"nb_run": +1},"$set":{job.status}})
-		
+				self.COLL.update({"_id": n["_id"]},{"$inc":{"nb_run": +1},"$set":{job.status}})
+			ReportJob(job.name)
+			
 		return self.shutdown()	
 			#if self.next_run == self.now# toutes les minutes
 			#self.last_run = self.next_run

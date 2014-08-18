@@ -39,19 +39,14 @@ class Worker(object):
 		self.status = True
 		
 		#schedule params
-		self.execute = False
-		self.scheduled = True
-		self.start_date = dt.now()
-		#self.first_run = self.start_date.replace(self.start_day.minute+3)
+		self.creation_date = dt.now()
+		self.last_run = None
+		self.next_run = "unset"
 		self.nb_run = 0
 			
 	def task_from_ui(self, user_input):
 		'''mapping user input into task return job parameters'''
 		self.name = user_input['<name>']
-		#run immediately
-		self.first_run = 1
-		#no schedule
-		self.scheduled = False
 		self.value = None
 		if validate_email(self.name) is True:
 			self.action = "show_user"
@@ -153,10 +148,14 @@ class Worker(object):
 	def create_task(self):
 		'''create one specific task'''
 		if ask_yes_no("Do you want to create a new project?"):
-			print self.__dict__
+			self.next_run = datetime.datetime.now()
+			self.next_run = self.next_run.replace(second = 00)
+			minutes = self.next_run.minute
+			self.next_run = self.next_run.replace(minutes+5)
+			print self.next_run
 			self.schedule_task()
 			#self.run_task()
-			return "Sucessfully created '%s' task for project '%s'."%(self.task.action,self.task.name)
+			return "Sucessfully created '%s' task for project '%s'."%(self.action,self.name)
 		else: sys.exit()
 	
 	def select_task(self, query):
@@ -202,6 +201,8 @@ class Worker(object):
 			print "No task for project %s"% self.name
 			
 	def update_crawl(self):
+		
+		print self.next_run
 		print "update _crawl"
 		self.action = "crawl"
 		self.select_task({"name": self.name, "action": self.action})
@@ -210,8 +211,12 @@ class Worker(object):
 			self.create_task()
 		else:
 			print self.scope
-			if self.scope == "q":
+			if self.scope == "q":				
 				self.COLL.update({"_id":self.task["_id"]}, {"$set":{"query": self.query}})
+				if self.next_run == "unset":
+					self.next_run = self.next_run.replace(self.next_run.minute, self.next_run.minute+5) 
+					self.COLL.update({"_id":self.task["_id"]}, {"$set":{"next_run": self.next_run}})
+					
 				return "Sucessfully updated query to : %s on crawl job of project %s" %(self.query, self.name)
 			elif self.scope == "k":
 				
@@ -221,6 +226,9 @@ class Worker(object):
 					c = CrawlJob(self.task)
 					try:
 						if c.get_bing() is True:
+							if self.next_run == "unset":
+								self.next_run = self.next_run.replace(self.next_run.minute, self.next_run.minute+5) 
+								self.COLL.update({"_id":self.task["_id"]}, {"$set":{"next_run": self.next_run}})
 							return "%s seeds from search successfully added to sources of crawl project '%s'" %(c.seeds_nb, self.name)
 						else:
 							return c.status["msg"]
@@ -248,10 +256,16 @@ class Worker(object):
 			self.COLL.update({"_id":self.task["_id"]},{"$set":{"option": self.option}})
 			print "Successfully added option expand for crawl project %s"% self.name
 			c.expand()
+			if self.next_run == "unset":
+				self.next_run = self.next_run.replace(self.next_run.minute, self.next_run.minute+5) 
+				self.COLL.update({"_id":self.task["_id"]}, {"$set":{"next_run": self.next_run}})
 			return c.status["msg"]
 		elif self.option == "add":
 			url = check_url(self.url)[-1]
-			c.insert_url(url,"manual")	
+			c.insert_url(url,"manual")
+			if self.next_run == "unset":
+				self.next_run = self.next_run.replace(self.next_run.minute, self.next_run.minute+5) 
+				self.COLL.update({"_id":self.task["_id"]}, {"$set":{"next_run": self.next_run}})
 			return "Succesfully added url %s to seeds of crawl job %s"%(url, self.name)
 		else:
 			#set
@@ -259,11 +273,17 @@ class Worker(object):
 				print self.value
 				self.COLL.update({"_id":self.task["_id"]},{"$set":{self.value: getattr(self, self.value)}})			
 				if self.option == "set":
+					if self.next_run == "unset":
+						self.next_run = self.next_run.replace(self.next_run.minute, self.next_run.minute+5) 
+						self.COLL.update({"_id":self.task["_id"]}, {"$set":{"next_run": self.next_run}})
 					return "Sucessfully added a new %s \"%s\" to crawl job of project %s"%(self.value, getattr(self, self.value), self.name)
 				#append
 				else:
 					print "Sucessfully added a new %s \"%s\" to crawl job of project %s"%(self.value, getattr(self, self.value), self.name)		
 					c.get_local()
+					if self.next_run == "unset":
+						self.next_run = self.next_run.replace(self.next_run.minute, self.next_run.minute+5) 
+						self.COLL.update({"_id":self.task["_id"]}, {"$set":{"next_run": self.next_run}})
 					return c.status["msg"]
 					
 	def update_project(self):
@@ -275,7 +295,9 @@ class Worker(object):
 		else:
 			for n in self.task_list:
 				self.COLL.update({"_id":n["_id"]},{"$set":{self.value: getattr(self, self.value)}})
-				
+				if self.next_run == "unset":
+					self.next_run = self.next_run.replace(self.next_run.minute, self.next_run.minute+5) 
+					self.COLL.update({"_id":n["_id"]}, {"$set":{"next_run": self.next_run}})
 			return "Succesfully updated the entire project %s with new value: %s" %(self.name, getattr(self, self.value))
 		
 	def refresh_task(self, name, action="crawl"):
@@ -287,7 +309,6 @@ class Worker(object):
 	
 	def schedule_task(self):
 		'''schedule task inserting into db'''
-		self.first_run = 4*60
 		self.COLL.insert(self.__dict__)
 		return "%s on project %s has been sucessfully scheduled to be run next %s" %(self.action, self.name, self.repeat)
 		
@@ -334,7 +355,22 @@ class Worker(object):
 				db.client.drop_database(self.name)
 			return "Project %s sucessfully deleted." %self.name
 	
-	
+	def set_next_run(self):
+		if self.next_run = "unset":
+			self.next_run = datetime.datetime.now()
+			self.next_run = self.next_run.replace( second=0, microsecond=0)
+			mins = self.next_run.minute+5
+			self.next_run = self.next_run.replace(minute = mins) 
+			return self.next_run
+		
+	def update_next_run(self):
+		self.last_run = self.next_run
+		if self.repeat = "week":
+			self.next_run = self.last_run.replace(day = self.last_run.day+7)
+		else:	
+			self.next_run = self.last_run.replace(str(self.repeat) = self.last_run.str(self.repeat)+1)
+		return self.last_run, self.next_run
+			
 	def start(self):
 		self.select_task({"name":self.name, "action":"crawl"})
 		if self.task is None:
