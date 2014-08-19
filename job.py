@@ -250,7 +250,7 @@ class Archive(object):
 class Export(object):
 	def __init__(self, name, coll_type = None):
 		self.date = datetime.now()
-		self.date = self.date.strftime('%d-%m-%Y_%H:%M')
+		self.date = self.date.strftime('%d-%m-%Y__%H-%M')
 		self.name = name
 		self.coll_type = coll_type 
 	

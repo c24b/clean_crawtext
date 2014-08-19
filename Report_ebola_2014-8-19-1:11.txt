@@ -1,7 +1,0 @@
-===STATS===
-Stored results in Mongo Database: ebola 
-	-Nombre de resultats dans la base: 561
-	-Nombre de sources: 81
-	-urls en cours de traitement: 0
-	-urls traitees: 561
-	-Size of the database ebola: 88 MB

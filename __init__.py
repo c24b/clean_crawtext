@@ -64,18 +64,12 @@ CRAWTEXT_DIR = os.path.dirname(os.path.abspath(sys.argv[0]))
 
 import __future__
 from docopt import docopt
-
+from worker import Worker
 
  
 
 if __name__== "__main__":
-	from worker import Worker
 	
-	#~ user_input = docopt(__doc__)
-		#~ is_valid = validate_email(user_input['<email>'])
-		#~ if is_valid:
-			#~ user_input['<name>'] = user_input['<email>']
-		#~ else:
 	try:		
 		w = Worker()
 		print w.run(docopt(__doc__))
