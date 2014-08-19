@@ -16,6 +16,7 @@ Installation
 To install crawtext, it is recommended to create a virtual env:
 	
 	$mkvirtualenv crawtext
+	
 	$workon crawtext
 
 Then you can automatically install all the dependencies using pip
