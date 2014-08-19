@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 from wk import Worker
+from job import *
 from database import Database, TASK_COLL, TASK_MANAGER_NAME
 from datetime import datetime
-from threading import Timer
-from multiprocessing import Pool
-from job import *
+#from threading import Timer
+import threading
 
 def refresh_task(next_run, repeat):
 	'''after a run update the last_run and set nb_run how to log msg?'''
@@ -58,24 +58,20 @@ def run_task(task):
 		last_run, next_run = refresh_task(task['next_run'], task['repeat'])	
 		db.job.update({"_id":task["_id"]}, {"$inc": {"nb_run": 1}})
 		if j is False:
-			db.job.update({"_id":task["_id"]}, {"$set":{"status":j.status})
-			db.job.update({"_id":task["_id"]}, {"$set":{"next_run":None})
+			db.job.update({"_id":task["_id"]}, {"$set":{"status":j.status}})
+			db.job.update({"_id":task["_id"]}, {"$set":{"next_run":None}})
 		else:
-			db.job.update({"_id":task["_id"]}, {"$set":{"last_run":last_run,"next_run":next_run,})
+			db.job.update({"_id":task["_id"]}, {"$set":{"last_run":last_run,"next_run":next_run}})
 		return True	
 	else:
 		return False
+
 def scheduler():
 	db = Database(TASK_MANAGER_NAME)
 	db.job = db.use_coll(TASK_COLL)
 	for n in db.job.find():
 		print run_task(n)
-	#~ tasks = db.job.find()
-	#~ pool = Pool(6)
-	#~ pool.map(run_task, tasks)	
-	#~ pool.close()
-	#~ return pool.join()
-    
+	
 def main():
 	#~ x=datetime.today()
 	#~ y=x.replace(day=x.day, hour=23, minute=42, second=10, microsecond=0)
@@ -83,7 +79,42 @@ def main():
 	#~ secs=delta_t.seconds+1
 	t = Timer(1, scheduler)
 	t.start()
+
+class TaskThread(threading.Thread):
+    """Thread that executes a task every N seconds"""
+    
+    def __init__(self):
+		threading.Thread.__init__(self)
+		self._finished = threading.Event()
+		self._interval = 15.0
+		DB = Database(TASK_MANAGER_NAME)
+		self.COLL = DB.use_coll(TASK_COLL)
+		self.tasks_list = list(self.COLL.find())
+    def setInterval(self, interval):
+        """Set the number of seconds we sleep between executing our task"""
+        self._interval = interval
+    
+    def shutdown(self):
+        """Stop this thread"""
+        self._finished.set()
+    
+    def run(self):
+        while 1:
+            if self._finished.isSet(): return
+            self.task()
+            
+            # sleep for interval or until shutdown
+            self._finished.wait(self._interval)
+    
+    def task(self):
+		db = Database(TASK_MANAGER_NAME)
+		db.job = db.use_coll(TASK_COLL)
+		for n in db.job.find():
+			print run_task(n)
 	
 if __name__ == "__main__":
-	main()
+	tt = TaskThread()
+	tt.setInterval(3)
+	print 'starting'
+	tt.start()
 
