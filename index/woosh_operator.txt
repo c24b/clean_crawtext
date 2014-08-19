@@ -1,0 +1,2 @@
+Query:
+Whoosh supports AND OR NOT and * ?
