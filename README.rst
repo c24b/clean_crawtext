@@ -129,8 +129,9 @@ Special thanks
 
 TODO
 ----
-* Reactivate meta extraction and tagsfor articles
-* Activate Archive mode to crawl a website
+* Adding example of json output
+* Reactivate meta extraction and tags for articles
+* Activate Archive mode to crawl a entire website
 * Send a mail after execution
 * Build a web interface
 
