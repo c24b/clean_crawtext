@@ -234,7 +234,6 @@ class ContentExtractor(object):
 		node = self.article.doc
 		if node is None:
 			node = self.parser(self.article.raw_html)
-			
 		select = CSSSelector("a")
 		links = [ el.get('href') for el in select(node)]
 		links = [n for n in self.links if n is not None or n != ""]

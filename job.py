@@ -20,11 +20,16 @@ from query import Query
 			 
 class Crawl(object):
 	def __init__(self, name): 
+		self.name = name
+		self.option = None
+		self.file = None
+		self.key = None
+		self.query = None		
 		#mapping from task_manager
 		DB = Database(TASK_MANAGER_NAME)
 		COLL = DB.use_coll(TASK_COLL)
 		values = COLL.find_one({"name":self.name, "action": "crawl"})
-		for k,v in job.items():
+		for k,v in values.items():
 			setattr(self, k, v)
 		self.db = Database(self.name)
 		self.db.create_colls(['sources', 'results', 'logs', 'queue'])	
@@ -206,12 +211,11 @@ class Crawl(object):
 						if page.check() and page.request() and page.control():
 							article = page.extract("article")
 							if article.status is True:
-								if article.is_relevant(query):
-									
+								if article.is_relevant(query):			
 									self.db.results.insert(article.repr())
 									if article.outlinks is not None and len(article.outlinks) > 0:
 										self.db.queue.insert(article.outlinks)
-							else:
+							else:	
 								self.db.logs.insert(article.logs)
 						else:
 							self.db.logs.insert(page.status)	
@@ -232,21 +236,7 @@ class Crawl(object):
 	def stop(self):		
 		print self.db.drop_collection("queue")	
 		return "Current crawl job %s stopped." %self.name	
-	
-class Report(object):
-	def __init__(self, name):
-		self.date = datetime.now()
-		self.name = name
-		self.db = Database(self.name)
-		
-	def run_job(self):
-		print "Report for crawl results of %s" %self.name
-		filename = "Report_%s_%d-%d-%d-%d:%d.txt" %(self.name, self.date.year, self.date.month, self.date.day,self.date.hour, self.date.minute)
-		with open(filename, 'a') as f:
-			f.write((self.db.stats()).encode('utf-8'))
-		print "Successfully generated report for %s\nReport name is %s and stored in current directory" %(self.name, filename)
-		return True
-			
+				
 class Archive(object):
 	def __init__(self, name):
 		self.date = datetime.now()
@@ -287,5 +277,18 @@ class Export(object):
 			subprocess.call(['zip', zipf, self.filename])
 			return True
 		
+class Report(object):
+	def __init__(self, name):
+		self.date = datetime.now()
+		self.name = name
+		self.db = Database(self.name)
+		
+	def run_job(self):
+		print "Report for crawl results of %s" %self.name
+		filename = "Report_%s_%d-%d-%d-%d:%d.txt" %(self.name, self.date.year, self.date.month, self.date.day,self.date.hour, self.date.minute)
+		with open(filename, 'a') as f:
+			f.write((self.db.stats()).encode('utf-8'))
+		print "Successfully generated report for %s\nReport name is %s and stored in current directory" %(self.name, filename)
+		return True
 		
 

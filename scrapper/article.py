@@ -7,7 +7,8 @@ from cleaners import StandardDocumentCleaner
 from formatters import StandardOutputFormatter
 from extractors import StandardContentExtractor
 import datetime
-import pdb
+from BeautifulSoup import BeautifulSoup as bs
+
 class Extractor(object):
 	'''Generic Extractor'''	
 	@staticmethod
@@ -15,7 +16,7 @@ class Extractor(object):
 		if type == "article":
 			content = Article(url, raw_html, lang)
 		elif type == "defaut":
-			content = WebPage()
+			raise NotImplementedError	
 		else:
 			raise NotImplementedError	
 		 	
@@ -75,16 +76,16 @@ class Article(Extractor):
 			#meta
 			self.meta_lang = extractor.get_meta_lang()
 			#self.meta_favicon = extractor.get_favicon()
-			self.meta_description = extractor.get_meta_description()
+			#self.meta_description = extractor.get_meta_description()
 			#self.meta_description = self.meta_description.decode("utf-8")
-			self.meta_keywords = extractor.get_meta_keywords()
+			#self.meta_keywords = extractor.get_meta_keywords()
 			
 			#domain and url
 			self.canonical_link = extractor.get_canonical_link()
 			self.domain = extractor.get_domain()
 			#~ 
 			#~ #tag
-			self.tags = extractor.extract_tags()
+			#self.tags = extractor.extract_tags()
 			#~ #text
 			self.doc = cleaner.clean()
 			
@@ -95,10 +96,14 @@ class Article(Extractor):
 			# clean_text
 			#self.cleaned_text = formatter.get_formatted_text()
 			
-			self.content = formatter.get_formatted_text()
+			
 			#self.content = self.content.decode("utf-8")
 			self.links = extractor.get_links()
 			self.outlinks = extractor.get_outlinks()
+			try:
+				self.content = formatter.get_formatted_text()
+			except Exception as e:
+				self.content = bs(self.raw_html).text
 			#self.inlinks, self.inlinks_err = extractor.get_outlinks(self.links)
 			# TODO
 			# self.article.publish_date = self.extractor.get_pub_date(doc)

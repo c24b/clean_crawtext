@@ -22,8 +22,7 @@ from tld import get_tld
 from scrapper import *
 from utils.url import *
 
-
-        
+ 
 class Page(object):
 	'''Page factory'''
 	def __init__(self, url, output_format="defaut"):

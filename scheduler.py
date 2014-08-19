@@ -5,13 +5,34 @@ from database import Database, TASK_COLL, TASK_MANAGER_NAME
 from datetime import datetime
 from threading import Timer
 from multiprocessing import Pool
-from job import Job
+from job import *
 
+def refresh_task(next_run, repeat):
+	'''after a run update the last_run and set nb_run how to log msg?'''
+	last_run = next_run
+	
+	if repeat == "week":
+		next_run = last_run.replace(day = self.last_run.day+7)
+	else:
+		last_value = getattr(last_run, repeat)
+		
+		if repeat == "day":
+			next_run = last_run.replace(day=last_value+1)
+			
+		if repeat == "month":
+			next_run = last_run.replace(month=last_value+1)
+		elif repeat == "year":
+			next_run = last_run.replace(year=last_value+1)
+	return last_run, next_run
+	
 def run_or_die(task):
 	today = datetime.today()
-	print today.second
+	if task["next_run"] is None:
+		return False
+		
 	if task["repeat"] == "hour":
-		if task["next_run"].hour == today.hour: return True
+		if task["next_run"].hour == today.hour: 
+			return True
 		
 	elif task["repeat"] == "day" or task["repeat"] == "week":
 		if task["next_run"].day == today.day: 
@@ -27,22 +48,33 @@ def run_or_die(task):
 		return False		
 
 def run_task(task):
-	print task
+	db = Database(TASK_MANAGER_NAME)
+	db.job = db.use_coll(TASK_COLL)
+	
 	if run_or_die(task) is True:
-		
-		db.job.update(task["_id"], {"$set":{"last_run_at":datetime.today(), "exec_time": t.elapsed, "status": status, "msg": t.logs}, "$inc": {"nb_run": 1}})
-		
+		class_action = task["action"].capitalize()
+		j = class_action(task["name"])
+		j.run_job()
+		last_run, next_run = refresh_task(task['next_run'], task['repeat'])	
+		db.job.update({"_id":task["_id"]}, {"$inc": {"nb_run": 1}})
+		if j is False:
+			db.job.update({"_id":task["_id"]}, {"$set":{"status":j.status})
+			db.job.update({"_id":task["_id"]}, {"$set":{"next_run":None})
+		else:
+			db.job.update({"_id":task["_id"]}, {"$set":{"last_run":last_run,"next_run":next_run,})
 		return True	
 	else:
 		return False
 def scheduler():
 	db = Database(TASK_MANAGER_NAME)
-	db.jobs = db.use_coll(TASK_COLL)
-	tasks = db.jobs.find()
-	pool = Pool(6)
-	pool.map(run_task, tasks)	
-	pool.close()
-	return pool.join()
+	db.job = db.use_coll(TASK_COLL)
+	for n in db.job.find():
+		print run_task(n)
+	#~ tasks = db.job.find()
+	#~ pool = Pool(6)
+	#~ pool.map(run_task, tasks)	
+	#~ pool.close()
+	#~ return pool.join()
     
 def main():
 	#~ x=datetime.today()
@@ -54,3 +86,4 @@ def main():
 	
 if __name__ == "__main__":
 	main()
+
