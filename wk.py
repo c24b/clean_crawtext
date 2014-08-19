@@ -8,14 +8,8 @@ from job import *
 #from abc import ABCMeta, abstractmethod
 
 import docopt
-from utils.goose import *
-
-
-#from utils import 
-#from utils import ask_yes_no, validate_email, validate_url
-from read_the_doc import CMD_DOC
 from utils import *
-import threading
+
 
 class Worker(object):
 	''' main access to Job Database'''
